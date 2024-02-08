@@ -1,8 +1,8 @@
 """
 Copyright 2020 Alexey Alexandrov
 
-Данный код был написан чёрт знает когда.
-На стиль написания не осуждать (хотя я cам осуждаю).
+Данный код был написан чёрт знает когда (см. выше).
+Стиль написания не осуждать (хотя я cам осуждаю).
 """
 
 import warnings
@@ -12,19 +12,22 @@ from prettytable import PrettyTable
 
 from .exceptions import SimplexException
 
+# Определяет число знаков при округлении.
 ROUND_CONST = 4
 
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 
 class SimplexTable:
-    """
-    Класс симплекс-таблицы.
-    """
+    """Класс симплекс-таблицы."""
 
-    def __init__(self, obj_func_coffs, constraint_system_lhs, constraint_system_rhs):
+    def __init__(
+        self, 
+        obj_func_coffs: np.array,
+        constraint_system_lhs: np.array,
+        constraint_system_rhs: np.array,
+    ):
         """
-        Переопределённый метод __init__ для создания экземпляра класса SimplexTable.
         :param obj_func_coffs: коэффициенты ЦФ.
         :param constraint_system_lhs: левая часть системы ограничений.
         :param constraint_system_rhs: правая часть системы ограничений.
@@ -51,22 +54,17 @@ class SimplexTable:
                 self.main_table_[i][j + 1] = round(constraint_system_lhs[i][j], ROUND_CONST)
 
     def __str__(self):
-        """
-        Переопренный метод __str__ для симплекс-таблицы.
-        :return: Строка с выводом симплекс-таблицы.
-        """
         table = PrettyTable()
         table.field_names = self.top_row_
         for i in range(self.main_table_.shape[0]):
-            row = [self.left_column_[i]] + list(self.main_table_[i])
-            table.add_row(row)
+            table.add_row([self.left_column_[i]] + list(self.main_table_[i]))
 
         return table.__str__()
 
-    def is_find_ref_solution(self):
+    def is_find_ref_solution(self) -> bool:
         """
-        Функция проверяет, найдено ли опорное решение по свободным в симплекс-таблице.
-        :return: True - опорное решение уже найдено. False - полученное решение пока не является опорным.
+        Проверяет, найдено ли опорное решение по свободным в симплекс-таблице.
+        :return: True - опорное решение уже найдено, иначе - пока не является опорным.
         """
 
         # Проверяем все, кроме коэффициента ЦФ
@@ -75,7 +73,7 @@ class SimplexTable:
                 return False
         return True
 
-    def search_ref_solution(self):
+    def search_ref_solution(self) -> None:
         """
         Функция производит одну итерацию поиска опорного решения.
         """
@@ -130,10 +128,10 @@ class SimplexTable:
         # Пересчёт симплекс-таблицы.
         self.recalc_table(res_row, res_col, res_element)
 
-    def is_find_opt_solution(self):
+    def is_find_opt_solution(self) -> bool:
         """
-        Функция проверяет, найдено ли оптимальное решение по коэффициентам ЦФ в симплекс-таблице.
-        :return: True - оптимальное решение уже найдено. False - полученное решение пока не оптимально.
+        Проверяет, найдено ли оптимальное решение по коэффициентам ЦФ в симплекс-таблице.
+        :return: True - оптимальное решение уже найдено, иначе - пока не оптимально.
         """
         for i in range(1, self.main_table_.shape[1]):
             if self.main_table_[self.main_table_.shape[0] - 1][i] > 0:
@@ -141,9 +139,9 @@ class SimplexTable:
         # Если положительных не нашлось, то оптимальное решение уже найдено.
         return True
 
-    def optimize_ref_solution(self):
+    def optimize_ref_solution(self) -> None:
         """
-        Функция производит одну итерацию поиска оптимального решения на основе
+        Производит одну итерацию поиска оптимального решения на основе
         уже полученного опорного решения.
         """
         res_col = None
@@ -182,9 +180,9 @@ class SimplexTable:
         # Пересчёт симплекс-таблицы.
         self.recalc_table(res_row, res_col, res_element)
 
-    def recalc_table(self, res_row, res_col, res_element):
+    def recalc_table(self, res_row: int, res_col: int, res_element):
         """
-        Функция по заданным разрешающим строке, столбцу и элекменту производит перерасчёт
+        По заданным разрешающим строке, столбцу и элекменту производит перерасчёт
         симплекс-таблицы методом жордановых искоючений.
         :param res_row: индекс разрешающей строки
         :param res_col: индекс разрешающего столбца
@@ -220,11 +218,11 @@ class SimplexTable:
         self.swap_headers(res_row, res_col)
         print(self.__str__())
 
-    def swap_headers(self, res_row, res_col):
+    def swap_headers(self, res_row: int, res_col: int) -> None:
         """
-        Функция меняет переменные в строке и столбце местами.
-        :param res_row: разрешающая строка
-        :param res_col: разрешающий столбец
+        Меняет переменные в строке и столбце местами.
+        :param res_row: индекс разрешающей строки
+        :param res_col: индекс разрешающего столбца
         """
         self.top_row_[res_col + 1], self.left_column_[res_row] = (
             self.left_column_[res_row], self.top_row_[res_col + 1]
