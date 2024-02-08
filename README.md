@@ -1,17 +1,19 @@
-# Game Theory. 10 semester (5 course).
+# Game Theory. 10 semester (5 year).
 
 ## Quick Start
 
-Windows:
-```shell
-python -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
+1. Installing Poetry to manage dependencies.
+```bash
+pip3 install poetry=1.7.1
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-*Nix:
+2. All dependencies have already locked in poetry.lock, you just need to install it. 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
+poetry install
+```
+
+3. And now you're ready to run jupyter notebook using env based on poetry dependencies.
+```bash
+poetry run jupyter-notebook
 ```

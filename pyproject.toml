@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "game-theory"
+version = "0.1.0"
+description = "This is study repo with works&labs in Game Theory and Operations Research course"
+authors = ["Alexey N. Alexandrov <alexandrov-iu8@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.26.4"
+pandas = "^2.2.0"
+prettytable = "^3.9.0"
+scipy = "^1.12.0"
+matplotlib = "^3.8.2"
+notebook = "^7.0.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
