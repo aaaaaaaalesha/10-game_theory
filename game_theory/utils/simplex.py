@@ -1,8 +1,8 @@
 """
 Copyright 2020 Alexey Alexandrov
 
-Данный код был написан чёрт знает когда.
-На стиль написания не осуждать (хотя я cам осуждаю).
+Данный код был написан чёрт знает когда (см. выше).
+Стиль написания не осуждать (хотя я cам осуждаю).
 """
 
 import json
@@ -20,25 +20,29 @@ class Simplex:
 
     def __init__(self, path_to_file):
         """
-        Переопределённый метод __init__. Регистрирует входные данные из JSON-файла.
-        Определяем условие задачи.
+        Регистрирует входные данные из JSON-файла. Определяет условие задачи.
         :param path_to_file: путь до JSON-файла с входными данными.
         """
         # Парсим JSON-файл с входными данными
         with open(path_to_file, 'r') as read_file:
             json_data = json.load(read_file)
-            self.obj_func_coffs_ = np.array(json_data['obj_func_coffs'])  # вектор-строка с - коэффициенты ЦФ
-            self.constraint_system_lhs_ = np.array(json_data['constraint_system_lhs'])  # матрица ограничений А
-            self.constraint_system_rhs_ = np.array(json_data['constraint_system_rhs'])  # вектор-столбец ограничений b
-            self.func_direction_ = json_data['func_direction']  # направление задачи (min или max)
+            # Вектор-строка с - коэффициенты ЦФ.
+            self.obj_func_coffs_ = np.array(json_data['obj_func_coffs'])
+            # Матрица ограничений А.
+            self.constraint_system_lhs_ = np.array(json_data['constraint_system_lhs'])
+            # Вектор-столбец ограничений b.
+            self.constraint_system_rhs_ = np.array(json_data['constraint_system_rhs'])
+            # Направление задачи (min или max)
+            self.func_direction_ = json_data['func_direction']
 
             if len(self.constraint_system_rhs_) != self.constraint_system_rhs_.shape[0]:
                 raise SimplexException(
-                    'Ошибка при вводе данных. Число строк в матрице и столбце ограничений не совпадает.'
+                    'Ошибка при вводе данных. Число строк в матрице' 
+                    'и столбце ограничений не совпадает.'
                 )
 
-            # Если задача на max, то меняем знаки ЦФ и направление задачи (в конце возьмем решение со знаком минус и
-            # получим искомое).
+            # Если задача на max, то меняем знаки ЦФ и направление задачи
+            # (в конце возьмем решение со знаком минус и получим искомое).
             if self.func_direction_ == 'max':
                 self.obj_func_coffs_ *= -1
 
@@ -50,10 +54,7 @@ class Simplex:
             )
 
     def __str__(self):
-        """
-        Переопределённый метод __str__ для условия задачи.
-        :return: Строка с выводом условия задачи.
-        """
+        """Условие задачи."""
         return '\n'.join((
             f'Условие задачи:',
             f'{"-" * 60}',
@@ -68,9 +69,7 @@ class Simplex:
 
     # Этап 1. Поиск опорного решения.
     def reference_solution(self):
-        """
-        Метод производит отыскание опорного решения.
-        """
+        """Поиск опорного решения."""
         print('Процесс решения:\n1) Поиск опорного решения:')
         print('Исходная симплекс-таблица:', self.simplex_table_, sep='\n')
         while not self.simplex_table_.is_find_ref_solution():
@@ -81,9 +80,7 @@ class Simplex:
 
     # Этап 2. Поиск оптимального решения.
     def optimal_solution(self):
-        """
-        Метод производит отыскание оптимального решения.
-        """
+        """Метод производит отыскание оптимального решения."""
         print('2) Поиск оптимального решения:')
         while not self.simplex_table_.is_find_opt_solution():
             self.simplex_table_.optimize_ref_solution()
@@ -91,7 +88,8 @@ class Simplex:
         # Если задача на max, то в начале свели задачу к поиску min, а теперь
         # возьмём это решение со знаком минус и получим ответ для max.
         if self.func_direction_ == 'max':
-            self.simplex_table_.main_table_[self.simplex_table_.main_table_.shape[0] - 1][0] *= -1
+            table_rows_count: int = self.simplex_table_.main_table_.shape[0]
+            self.simplex_table_.main_table_[table_rows_count - 1][0] *= -1
 
         print('Оптимальное решение найдено!')
         self.output_solution()
@@ -105,9 +103,15 @@ class Simplex:
 
         for var in fict_vars:
             print(var, '= ', end='')
+
         print(0, end=', ')
 
         for i in range(last_row_ind):
-            print(self.simplex_table_.left_column_[i], '= ', round(self.simplex_table_.main_table_[i][0], 1), end=', ')
+            print(
+                self.simplex_table_.left_column_[i], 
+                '= ', 
+                round(self.simplex_table_.main_table_[i][0], 1), 
+                end=', ',
+            )
 
         print('\nЦелевая функция: F =', round(self.simplex_table_.main_table_[last_row_ind][0], 1))
