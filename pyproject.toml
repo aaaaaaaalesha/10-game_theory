@@ -2,17 +2,93 @@
 name = "game-theory"
 version = "0.1.0"
 description = "This is study repo with works&labs in Game Theory and Operations Research course"
+
+license = "MIT"
+
 authors = ["Alexey N. Alexandrov <alexandrov-iu8@mail.ru>"]
-readme = "README.md"
+
+repository = "https://github.com/aaaaaaaalesha/10-game_theory"
+
+# README file(s) are used as the package description
+readme = ["README.md", "LICENSE"]
 
 [tool.poetry.dependencies]
+# Compatible Python versions.
 python = "^3.10"
+# The fundamental package for scientific computing with Python
 numpy = "^1.26.4"
+# Fast, powerful and easy to use data analysis tool.
 pandas = "^2.2.0"
+# Easily displaying tabular data in ASCII table format.
 prettytable = "^3.9.0"
+# Fundamental algorithms for scientific computing in Python.
 scipy = "^1.12.0"
+# Comprehensive library for visualizations and plots.
 matplotlib = "^3.8.2"
+# Web-based notebook environment for interactive computing.
 notebook = "^7.0.7"
+
+[tool.poetry.group.dev.dependencies]
+# Framework for managing pre-commit hooks.
+pre-commit = "^3.6.1"
+# Fast Python linter and code formatter.
+ruff = "^0.2.1"
+
+
+[tool.ruff]
+src = ["game_theory"]
+
+[tool.ruff.lint]
+extend-select = [
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+    # flake8-unused-arguments
+    "ARG",
+    # flake8-comprehensions
+    "C4",
+    # flake8-errmsg
+    "EM",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-logging-format
+    "G",
+    # pygrep-hooks
+    "PGH",
+    # flake8-pie
+    "PIE",
+    # pylint
+    "PL",
+    # flake8-use-pathlib
+    "PTH",
+    # flake8-return
+    "RET",
+    # Ruff-specific
+    "RUF",
+    # flake8-simplify
+    "SIM",
+    # pyupgrade
+    "UP",
+    # flake8-2020
+    "YTT",
+    # NumPy specific rules
+    "NPY",
+    # pandas-vet
+    "PD",
+    # flake8-pyi
+    "PYI",
+]
+ignore = [
+    "PLR09", # Too many <...>
+    "PLR2004", # Magic value used in comparison
+    "ISC001", # Conflicts with formatter
+]
+allowed-confusables = [
+    "а", "А", "в", "В", "е", "Е", "к", "К",
+    "н", "Н", "о", "О", "р", "Р", "с", "С",
+    "у", "У", "х", "Х",
+]
 
 
 [build-system]

@@ -1,19 +1,48 @@
-# Game Theory. 10 semester (5 year).
+<h1 align="center"> Game Theory. 10 semester  </h1>
+
+<p align="center">
+  <a href="https://badgen.net/badge/python/3.10 | 3.11/blue">
+      <img alt="Python 3.10 | 3.11" src="https://badgen.net/badge/python/3.10 | 3.11/blue" >
+  </a>
+  <a href="https://github.com/astral-sh/ruff">
+      <img alt="Code style: Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json" >
+  </a>
+</p>
 
 ## Quick Start
 
 1. Installing Poetry to manage dependencies.
+
 ```bash
-pip3 install poetry=1.7.1
+# Install Poetry.
+pip3 install poetry==1.7.1
+# Verify that Poetry is working.
+poetry --version
+```
+
+> [!WARNING]
+> If you receive an error: `"Command not found.", add Poetry to your user Path variable`.
+
+```bash
+# For *-nix systems.
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-2. All dependencies have already locked in poetry.lock, you just need to install it. 
-```bash
-poetry install
+```powershell
+# For Windows.
+[System.Environment]::SetEnvironmentVariable('path', $env:USERPROFILE + "\AppData\Roaming\Python\Scripts;" + [System.Environment]::GetEnvironmentVariable('path', "User"),"User")
 ```
 
-3. And now you're ready to run jupyter notebook using env based on poetry dependencies.
+2. All dependencies have already locked in poetry.lock, you just need to install it.
+
+```bash
+poetry install --without dev
+```
+
+3. And now you're ready to run jupyter notebook using env based on poetry venv dependencies.
+
 ```bash
 poetry run jupyter-notebook
+# OR just activate your created virtual environment like this.
+poetry shell
 ```

@@ -1,4 +1,7 @@
 .idea/
 .ipynb_checkpoints/
+__pycache__/
 venv/
+.venv/
 env/
+/.ruff_cache/
