@@ -3,6 +3,7 @@ default_language_version:
 repos:
   # Native pre-commit checks.
   - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
