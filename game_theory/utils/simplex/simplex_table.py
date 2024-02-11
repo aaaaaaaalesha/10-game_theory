@@ -12,17 +12,17 @@ from .exceptions import SimplexProblemException
 # Определяет число знаков при округлении.
 ROUND_CONST = 4
 
-warnings.filterwarnings('ignore', category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 class SimplexTable:
     """Класс симплекс-таблицы."""
 
     def __init__(
-            self,
-            obj_func_coffs: np.array,
-            constraint_system_lhs: np.array,
-            constraint_system_rhs: np.array,
+        self,
+        obj_func_coffs: np.array,
+        constraint_system_lhs: np.array,
+        constraint_system_rhs: np.array,
     ):
         """
         :param obj_func_coffs: коэффициенты ЦФ.
@@ -33,9 +33,9 @@ class SimplexTable:
         constraint_count = constraint_system_lhs.shape[0]
 
         # Заполнение верхнего хедера.
-        self.top_row_ = ['  ', 'Si0'] + [f'x{i + 1}' for i in range(var_count)]
+        self.top_row_ = ["  ", "Si0"] + [f"x{i + 1}" for i in range(var_count)]
         # Заполнение левого хедера.
-        self.left_column_ = [f'x{var_count + i + 1}' for i in range(constraint_count)] + ['F ']
+        self.left_column_ = [f"x{var_count + i + 1}" for i in range(constraint_count)] + ["F "]
 
         self.main_table_ = np.zeros((constraint_count + 1, var_count + 1))
         # Заполняем столбец Si0.
@@ -63,13 +63,7 @@ class SimplexTable:
         Проверяет, найдено ли опорное решение по свободным в симплекс-таблице.
         :return: True - опорное решение уже найдено, иначе - пока не является опорным.
         """
-
-        # Проверяем все, кроме коэффициента ЦФ
-        for i in range(self.main_table_.shape[0] - 1):
-            if self.main_table_[i][0] < 0:
-                return False
-
-        return True
+        return all(self.main_table_[i][0] >= 0 for i in range(self.main_table_.shape[0] - 1))
 
     def search_ref_solution(self) -> None:
         """
@@ -93,9 +87,9 @@ class SimplexTable:
         # Если найден разрешающий столбец, то находим в нём разрешающий элемент.
         if res_col is None:
             exc_msg = (
-                'Задача не имеет допустимых решений! '
-                'При нахождении опорного решения не нашлось '
-                'отрицательного элемента в строке с отрицательным свободным членом.'
+                "Задача не имеет допустимых решений! "
+                "При нахождении опорного решения не нашлось "
+                "отрицательного элемента в строке с отрицательным свободным членом."
             )
             raise SimplexProblemException(exc_msg)
 
@@ -110,14 +104,14 @@ class SimplexTable:
                 continue
 
             if (s_i0 / curr) > 0 and (minimum is None or (s_i0 / curr) < minimum):
-                minimum = (s_i0 / curr)
+                minimum = s_i0 / curr
                 ind = i
 
         if minimum is None:
             exc_msg = (
-                'Решения не существует! '
-                'При нахождении опорного решения не нашлось минимального '
-                'положительного отношения.'
+                "Решения не существует! "
+                "При нахождении опорного решения не нашлось минимального "
+                "положительного отношения."
             )
             raise SimplexProblemException(exc_msg)
 
@@ -125,9 +119,9 @@ class SimplexTable:
         # Разрешающий элемент найден.
         res_element = self.main_table_[res_row][res_col]
         print(
-            f'Разрешающая строка: {self.left_column_[res_row]}',
-            f'Разрешающий столбец: {self.top_row_[res_col + 1]}',
-            sep='\n',
+            f"Разрешающая строка: {self.left_column_[res_row]}",
+            f"Разрешающий столбец: {self.top_row_[res_col + 1]}",
+            sep="\n",
         )
 
         # Пересчёт симплекс-таблицы.
@@ -138,11 +132,8 @@ class SimplexTable:
         Проверяет, найдено ли оптимальное решение по коэффициентам ЦФ в симплекс-таблице.
         :return: True - оптимальное решение уже найдено, иначе - пока не оптимально.
         """
-        for i in range(1, self.main_table_.shape[1]):
-            if self.main_table_[self.main_table_.shape[0] - 1][i] > 0:
-                return False
         # Если положительных не нашлось, то оптимальное решение уже найдено.
-        return True
+        return all(self.main_table_[self.main_table_.shape[0] - 1][i] <= 0 for i in range(1, self.main_table_.shape[1]))
 
     def optimize_ref_solution(self) -> None:
         """
@@ -169,22 +160,19 @@ class SimplexTable:
                 continue
 
             if (s_i0 / curr) >= 0 and (minimum is None or (s_i0 / curr) < minimum):
-                minimum = (s_i0 / curr)
+                minimum = s_i0 / curr
                 res_row = i
 
         if res_row is None:
-            exc_msg = (
-                'Функция не ограничена! '
-                'Оптимального решения не существует.'
-            )
+            exc_msg = "Функция не ограничена! " "Оптимального решения не существует."
             raise SimplexProblemException(exc_msg)
 
         # Разрешающий элемент найден.
         res_element = self.main_table_[res_row][res_col]
         print(
-            f'Разрешающая строка: {self.left_column_[res_row]}',
-            f'Разрешающий столбец: {self.top_row_[res_col + 1]}',
-            sep='\n',
+            f"Разрешающая строка: {self.left_column_[res_row]}",
+            f"Разрешающий столбец: {self.top_row_[res_col + 1]}",
+            sep="\n",
         )
         # Пересчёт симплекс-таблицы.
         self.recalc_table(res_row, res_col, res_element)
@@ -219,7 +207,7 @@ class SimplexTable:
                 if j == res_col:
                     continue
                 value = self.main_table_[i][j] - (
-                        (self.main_table_[i][res_col] * self.main_table_[res_row][j]) / res_element
+                    (self.main_table_[i][res_col] * self.main_table_[res_row][j]) / res_element
                 )
                 recalced_table[i][j] = round(value, ROUND_CONST)
 
@@ -234,5 +222,6 @@ class SimplexTable:
         :param res_col: Индекс разрешающего столбца.
         """
         self.top_row_[res_col + 1], self.left_column_[res_row] = (
-            self.left_column_[res_row], self.top_row_[res_col + 1]
+            self.left_column_[res_row],
+            self.top_row_[res_col + 1],
         )

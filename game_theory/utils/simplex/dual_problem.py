@@ -29,16 +29,16 @@ class DualProblem(SimplexProblem):
             input_data: dict = json.load(read_file)
 
         # Коэффициенты при ЦФ в ДЗ равны свободным членам ограничений в ПЗ.
-        self.obj_func_coffs_ = np.array(input_data['constraint_system_rhs'])
+        self.obj_func_coffs_ = np.array(input_data["constraint_system_rhs"])
 
         # Свободные члены ограничений в ДЗ равны коэффициентам при ЦФ в ПЗ.
-        self.constraint_system_lhs_ = np.array(input_data['constraint_system_lhs']).transpose()
+        self.constraint_system_lhs_ = np.array(input_data["constraint_system_lhs"]).transpose()
 
         # Коэффициенты  любого ограничения ДЗ равны коэффициентам при одной переменной из всех ограничений ПЗ.
-        self.constraint_system_rhs_ = np.array(input_data['obj_func_coffs'])
+        self.constraint_system_rhs_ = np.array(input_data["obj_func_coffs"])
 
         # Минимизация ЦФ в ПЗ соответвстует максимизации ЦФ в ДЗ.
-        self.func_direction_ = 'max' if input_data['func_direction'] == 'min' else 'min'
+        self.func_direction_ = "max" if input_data["func_direction"] == "min" else "min"
 
         print(self.__str__())
 
@@ -47,23 +47,17 @@ class DualProblem(SimplexProblem):
         self.constraint_system_rhs_ *= -1
 
         if len(self.constraint_system_rhs_) != self.constraint_system_rhs_.shape[0]:
-            exc_msg = (
-                'Ошибка при вводе данных. '
-                'Число строк в матрице и столбце ограничений не совпадает.'
-            )
+            exc_msg = "Ошибка при вводе данных. " "Число строк в матрице и столбце ограничений не совпадает."
             raise DualProblemException(exc_msg)
 
         if len(self.constraint_system_rhs_) > len(self.obj_func_coffs_):
-            exc_msg = (
-                'СЛАУ несовместна! '
-                'Число уравнений больше числа переменных.'
-            )
+            exc_msg = "СЛАУ несовместна! " "Число уравнений больше числа переменных."
             raise DualProblemException(exc_msg)
 
         # Если задача на max, то
         # меняем знаки ЦФ и направление задачи
         # (в конце возьмем решение со знаком минус и получим искомое).
-        if self.func_direction_ == 'max':
+        if self.func_direction_ == "max":
             self.obj_func_coffs_ *= -1
 
         # Инициализация симплекс-таблицы.
@@ -74,14 +68,15 @@ class DualProblem(SimplexProblem):
         )
 
     def __str__(self):
-        """"Строка с выводом условия двойственной задачи"""
+        """ "Строка с выводом условия двойственной задачи"""
 
-        multiplier: int = -1 if self.func_direction_ == 'max' else 1
-        return '\n'.join([
-            f'F = cx -> {self.func_direction_},',
-            'Ax >= 1,',
-            'x1, x2, ..., xn >= 0',
-            f'C = {multiplier * self.obj_func_coffs_}'
-            f'A =\n{self.constraint_system_lhs_},',
-            f'b^T = {self.constraint_system_rhs_}.'
-        ])
+        multiplier: int = -1 if self.func_direction_ == "max" else 1
+        return "\n".join(
+            [
+                f"F = cx -> {self.func_direction_},",
+                "Ax >= 1,",
+                "x1, x2, ..., xn >= 0",
+                f"C = {multiplier * self.obj_func_coffs_}" f"A =\n{self.constraint_system_lhs_},",
+                f"b^T = {self.constraint_system_rhs_}.",
+            ]
+        )
