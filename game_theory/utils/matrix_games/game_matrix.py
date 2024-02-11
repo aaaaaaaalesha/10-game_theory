@@ -99,10 +99,10 @@ class GameMatrix:
     def _dominant_absorption_reduce(self) -> "GameMatrix":
         """Сводит к минимуму размерность матричной игры поглощением доминируемых стратегий."""
         # Поиск и удаление доминируемых строк
-        dominated_rows: list[int] = self.__find_dominated_rows()
+        dominated_rows: set[int] = self.__find_dominated_rows()
         if dominated_rows:
             # Обновление индексов строк для удаления.
-            dominated_rows = sorted(set(dominated_rows))
+            dominated_rows: list[int] = sorted(dominated_rows)
             # Удаление доминируемых строк.
             reduced_matrix: np.array = np.delete(self.game_matrix, dominated_rows, axis=0)
             # Обновление соответствующих стратегий игрока A.
@@ -116,10 +116,10 @@ class GameMatrix:
             )._dominant_absorption_reduce()
 
         # Поиск и удаление доминируемых столбцов.
-        dominated_columns: list[int] = self.__find_dominated_columns()
+        dominated_columns: set[int] = self.__find_dominated_columns()
         if dominated_columns:
             # Обновление индексов столбцов для удаления.
-            dominated_columns = sorted(set(dominated_columns))
+            dominated_columns: list[int] = sorted(dominated_columns)
             # Удаление доминируемых строк и столбцов.
             reduced_matrix: np.array = np.delete(self.game_matrix, dominated_columns, axis=1)
             # Обновление соответствующих стратегий игрока B.
@@ -139,39 +139,39 @@ class GameMatrix:
         exc_msg = "Этот метод я пока не прошёл :("
         raise NotImplementedError(exc_msg)
 
-    def __find_dominated_rows(self) -> list[int]:
-        """Возвращает список индексов доминируемых строк в текущей матрице."""
-        dominated_rows = []
+    def __find_dominated_rows(self) -> set[int]:
+        """Возвращает множество индексов доминируемых строк в текущей матрице."""
+        dominated_rows = set()
         # Поиск и удаление доминируемых строк
         for i in range(self.game_matrix.shape[0]):
             for j in range(self.game_matrix.shape[0]):
-                if i != j and all(self.game_matrix[j] >= self.game_matrix[i]):
-                    dominated_rows.append(i)
+                if i == j or i in dominated_rows:
+                    continue
+
+                if all(self.game_matrix[j] >= self.game_matrix[i]):
+                    dominated_rows.add(i)
                     msg = (
                         f"Поглощение стратегии {self.player_a_strategy_labels[i]} "
                         f"доминирующей стратегией {self.player_a_strategy_labels[j]}"
                     )
                     _logger.info(msg)
 
-            if dominated_rows:
-                break
-
         return dominated_rows
 
-    def __find_dominated_columns(self) -> list[int]:
-        """Возвращает список индексов доминируемых столбцов в текущей матрице."""
-        dominated_columns = []
+    def __find_dominated_columns(self) -> set[int]:
+        """Возвращает множество индексов доминируемых столбцов в текущей матрице."""
+        dominated_columns = set()
         for i in range(self.game_matrix.shape[1]):
             for j in range(self.game_matrix.shape[1]):
-                if i != j and all(self.game_matrix[:, j] <= self.game_matrix[:, i]):
-                    dominated_columns.append(i)
+                if i == j or i in dominated_columns:
+                    continue
+
+                if all(self.game_matrix[:, j] <= self.game_matrix[:, i]):
+                    dominated_columns.add(i)
                     msg = (
                         f"Поглощение стратегии {self.player_b_strategy_labels[i]} "
                         f"доминирующей стратегией {self.player_b_strategy_labels[j]}"
                     )
                     _logger.info(msg)
-
-            if dominated_columns:
-                break
 
         return dominated_columns
