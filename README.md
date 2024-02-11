@@ -7,6 +7,9 @@
   <a href="https://github.com/astral-sh/ruff">
       <img alt="Code style: Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json" >
   </a>
+  <a href="https://wakatime.com/badge/user/0e21c3c1-25e0-47ee-9c0f-77ef4b6b71e2/project/018c9823-7706-4998-af38-9a8734cf127a">
+      <img alt="Wakatime" src="https://wakatime.com/badge/user/0e21c3c1-25e0-47ee-9c0f-77ef4b6b71e2/project/018c9823-7706-4998-af38-9a8734cf127a.svg" >
+  </a>
 </p>
 
 ## Quick Start
@@ -36,6 +39,7 @@ export PATH="$HOME/.local/bin:$PATH"
 2. All dependencies have already locked in poetry.lock, you just need to install it.
 
 - If you need the complete environment with dev-tools.
+
 ```bash
 poetry install
 # Install pre-commit hook to .git.
@@ -43,6 +47,7 @@ pre-commit install
 ```
 
 - If you need minimal production dependencies without dev-tools.
+
 ```bash
 poetry install --without dev
 ```
