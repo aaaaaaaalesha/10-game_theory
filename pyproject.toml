@@ -38,7 +38,7 @@ ruff = "^0.2.1"
 [tool.ruff]
 # The directories to consider when resolving first- vs. third-party imports.
 src = ["game_theory"]
-# Allow lines to be as long as 120.
+# Allow lines length.
 line-length = 120
 # Whether to show an enumeration of all fixed lint violations
 show-fixes = true

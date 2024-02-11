@@ -35,25 +35,22 @@ export PATH="$HOME/.local/bin:$PATH"
 
 2. All dependencies have already locked in poetry.lock, you just need to install it.
 
-- If you need the complete environment with .
+- If you need the complete environment with dev-tools.
 ```bash
 poetry install
 # Install pre-commit hook to .git.
 pre-commit install
 ```
 
-
 - If you need minimal production dependencies without dev-tools.
 ```bash
 poetry install --without dev
 ```
 
-
-
 3. And now you're ready to run jupyter notebook using env based on poetry venv dependencies.
 
 ```bash
-poetry run jupyter-notebook
+poetry run jupyter notebook
 # OR just activate your created virtual environment like this.
 poetry shell
 ```

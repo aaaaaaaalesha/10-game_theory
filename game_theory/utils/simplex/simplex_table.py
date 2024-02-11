@@ -2,6 +2,7 @@
 Модуль с реализацией симплекс-таблицы.
 Copyright 2020 Alexey Alexandrov
 """
+import logging
 import warnings
 
 import numpy as np
@@ -13,6 +14,8 @@ from .exceptions import SimplexProblemException
 ROUND_CONST = 4
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+_logger = logging.getLogger(__name__)
 
 
 class SimplexTable:
@@ -118,11 +121,8 @@ class SimplexTable:
         res_row = ind
         # Разрешающий элемент найден.
         res_element = self.main_table_[res_row][res_col]
-        print(
-            f"Разрешающая строка: {self.left_column_[res_row]}",
-            f"Разрешающий столбец: {self.top_row_[res_col + 1]}",
-            sep="\n",
-        )
+        _logger.info("Разрешающая строка: %s", self.left_column_[res_row])
+        _logger.info("Разрешающий столбец: %s", self.top_row_[res_col + 1])
 
         # Пересчёт симплекс-таблицы.
         self.recalc_table(res_row, res_col, res_element)
@@ -169,11 +169,9 @@ class SimplexTable:
 
         # Разрешающий элемент найден.
         res_element = self.main_table_[res_row][res_col]
-        print(
-            f"Разрешающая строка: {self.left_column_[res_row]}",
-            f"Разрешающий столбец: {self.top_row_[res_col + 1]}",
-            sep="\n",
-        )
+        _logger.info("Разрешающая строка: %s", self.left_column_[res_row])
+        _logger.info("Разрешающий столбец: %s", self.top_row_[res_col + 1])
+
         # Пересчёт симплекс-таблицы.
         self.recalc_table(res_row, res_col, res_element)
 
@@ -213,7 +211,7 @@ class SimplexTable:
 
         self.main_table_ = recalced_table
         self.swap_headers(res_row, res_col)
-        print(self.__str__())
+        _logger.info(str(self))
 
     def swap_headers(self, res_row: int, res_col: int) -> None:
         """

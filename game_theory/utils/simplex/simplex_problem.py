@@ -3,12 +3,15 @@ Copyright 2020 Alexey Alexandrov
 
 """
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
 
 from .exceptions import SimplexProblemException
 from .simplex_table import SimplexTable
+
+_logger = logging.getLogger(__name__)
 
 
 class SimplexProblem:
@@ -55,37 +58,52 @@ class SimplexProblem:
         return "\n".join(
             (
                 "Условие задачи:",
-                f'{"-" * 60}',
                 "Найти вектор x = (x1,x2,..., xn)^T как решение след. задачи:",
                 f"F = cx -> {self.func_direction_},",
                 "Ax <= b,\nx1,x2, ..., xn >= 0",
                 f"C = {self.obj_func_coffs_},",
                 f"A =\n{self.constraint_system_lhs_},",
                 f"b^T = {self.constraint_system_rhs_}.",
-                f'{"-" * 60}',
             )
         )
+
+    def __repr__(self):
+        """Условие задачи для отображения в Jupyter."""
+        return str(self)
+
+    def solve(self) -> float:
+        """
+        Запуск решения задачи.
+        :returns: Значение целевой функции F после оптимизации.
+        """
+        _logger.info("Процесс решения:")
+        self.reference_solution()
+        self.optimal_solution()
+
+        last_row_ind: int = self.simplex_table_.main_table_.shape[0] - 1
+        return self.simplex_table_.main_table_[last_row_ind][0]
 
     # Этап 1. Поиск опорного решения.
     def reference_solution(self):
         """Поиск опорного решения."""
-        print(
-            "Процесс решения:",
-            "1) Поиск опорного решения:",
-            "Исходная симплекс-таблица:",
-            self.simplex_table_,
-            sep="\n",
+        _logger.info(
+            "\n".join(
+                (
+                    "Поиск опорного решения:",
+                    "Исходная симплекс-таблица:",
+                    str(self.simplex_table_),
+                )
+            )
         )
         while not self.simplex_table_.is_find_ref_solution():
             self.simplex_table_.search_ref_solution()
 
-        print("Опорное решение найдено!")
+        _logger.info("Опорное решение найдено!")
         self.__output_solution()
 
-    # Этап 2. Поиск оптимального решения.
-    def optimal_solution(self):
-        """Метод производит отыскание оптимального решения."""
-        print("2) Поиск оптимального решения:")
+    def optimal_solution(self) -> None:
+        """Поиск оптимального решения."""
+        _logger.info("Поиск оптимального решения:")
         while not self.simplex_table_.is_find_opt_solution():
             self.simplex_table_.optimize_ref_solution()
 
@@ -95,7 +113,7 @@ class SimplexProblem:
             table_rows_count: int = self.simplex_table_.main_table_.shape[0]
             self.simplex_table_.main_table_[table_rows_count - 1][0] *= -1
 
-        print("Оптимальное решение найдено!")
+        _logger.info("Оптимальное решение найдено!")
         self.__output_solution()
 
     def __output_solution(self) -> None:
@@ -106,20 +124,20 @@ class SimplexProblem:
         fict_vars = self.simplex_table_.top_row_[2:]
         last_row_ind = self.simplex_table_.main_table_.shape[0] - 1
 
-        for var in fict_vars:
-            print(var, "= ", end="")
+        # Output dummy variables =0 values.
+        _logger.info("".join([*[f"{var} = " for var in fict_vars], "0, "]))
 
-        print(0, end=", ")
-
-        for i in range(last_row_ind):
-            print(
-                self.simplex_table_.left_column_[i],
-                "= ",
-                round(self.simplex_table_.main_table_[i][0], 1),
-                end=", ",
+        # Output rest variables and its values.
+        _logger.info(
+            ", ".join(
+                [
+                    f"{self.simplex_table_.left_column_[i]} = {self.simplex_table_.main_table_[i][0]:.2f}"
+                    for i in range(last_row_ind)
+                ]
             )
+        )
 
-        print(
-            "\nЦелевая функция: F = ",
-            round(self.simplex_table_.main_table_[last_row_ind][0], 1),
+        _logger.info(
+            "Целевая функция: F = %.2f",
+            self.simplex_table_.main_table_[last_row_ind][0],
         )

@@ -4,6 +4,7 @@
 Copyright 2020 Alexey Alexandrov
 """
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +12,8 @@ import numpy as np
 from .exceptions import DualProblemException
 from .simplex_problem import SimplexProblem
 from .simplex_table import SimplexTable
+
+_logger = logging.getLogger(__name__)
 
 
 class DualProblem(SimplexProblem):
@@ -40,7 +43,7 @@ class DualProblem(SimplexProblem):
         # Минимизация ЦФ в ПЗ соответвстует максимизации ЦФ в ДЗ.
         self.func_direction_ = "max" if input_data["func_direction"] == "min" else "min"
 
-        print(self.__str__())
+        _logger.info(self.__str__())
 
         # Ограничения вида (<=) ПЗ переходят в ограничения вида (>=) ДЗ.
         self.constraint_system_lhs_ *= -1
@@ -76,7 +79,8 @@ class DualProblem(SimplexProblem):
                 f"F = cx -> {self.func_direction_},",
                 "Ax >= 1,",
                 "x1, x2, ..., xn >= 0",
-                f"C = {multiplier * self.obj_func_coffs_}" f"A =\n{self.constraint_system_lhs_},",
+                f"C = {multiplier * self.obj_func_coffs_}",
+                f"A =\n{self.constraint_system_lhs_},",
                 f"b^T = {self.constraint_system_rhs_}.",
             ]
         )
