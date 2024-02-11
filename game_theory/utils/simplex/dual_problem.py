@@ -40,21 +40,21 @@ class DualProblem(SimplexProblem):
         # Коэффициенты  любого ограничения ДЗ равны коэффициентам при одной переменной из всех ограничений ПЗ.
         self.constraint_system_rhs_ = np.array(input_data["obj_func_coffs"])
 
-        # Минимизация ЦФ в ПЗ соответвстует максимизации ЦФ в ДЗ.
+        # Минимизация ЦФ в ПЗ соответствует максимизации ЦФ в ДЗ.
         self.func_direction_ = "max" if input_data["func_direction"] == "min" else "min"
 
-        _logger.info(self.__str__())
+        _logger.info(str(self))
 
         # Ограничения вида (<=) ПЗ переходят в ограничения вида (>=) ДЗ.
         self.constraint_system_lhs_ *= -1
         self.constraint_system_rhs_ *= -1
 
         if len(self.constraint_system_rhs_) != self.constraint_system_rhs_.shape[0]:
-            exc_msg = "Ошибка при вводе данных. " "Число строк в матрице и столбце ограничений не совпадает."
+            exc_msg = "Ошибка при вводе данных. Число строк в матрице и столбце ограничений не совпадает"
             raise DualProblemException(exc_msg)
 
         if len(self.constraint_system_rhs_) > len(self.obj_func_coffs_):
-            exc_msg = "СЛАУ несовместна! " "Число уравнений больше числа переменных."
+            exc_msg = "СЛАУ несовместна! Число уравнений больше числа переменных"
             raise DualProblemException(exc_msg)
 
         # Если задача на max, то
@@ -71,7 +71,7 @@ class DualProblem(SimplexProblem):
         )
 
     def __str__(self):
-        """ "Строка с выводом условия двойственной задачи"""
+        """Вывод условия двойственной задачи"""
 
         multiplier: int = -1 if self.func_direction_ == "max" else 1
         return "\n".join(
