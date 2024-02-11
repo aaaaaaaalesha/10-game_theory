@@ -59,7 +59,7 @@ class SimplexTable:
         for i in range(self.main_table_.shape[0]):
             table.add_row([self.left_column_[i], *self.main_table_[i]])
 
-        return table.__str__()
+        return str(table)
 
     def is_find_ref_solution(self) -> bool:
         """

@@ -1,11 +1,177 @@
 """Прямоугольная матрица игры двух лиц."""
+import copy
+import logging
+
+import numpy as np
+from prettytable import PrettyTable
+
+from .exceptions import MatrixGameException
+
+_logger = logging.getLogger(__name__)
 
 
 class GameMatrix:
-    """"""
+    """Реализация матрицы игры для двух игроков: A и B"""
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        matrix: np.array,
+        player_a_strategy_labels: list[str] | None = None,
+        player_b_strategy_labels: list[str] | None = None,
+    ):
+        self.game_matrix: np.array = matrix
+        self.player_a_strategy_labels = player_a_strategy_labels
+        self.player_b_strategy_labels = player_b_strategy_labels
+        if player_a_strategy_labels is None:
+            self.player_a_strategy_labels: list[str] = [f"a{i + 1}" for i in range(matrix.shape[0])]
+        if player_b_strategy_labels is None:
+            self.player_b_strategy_labels: list[str] = [f"b{i + 1}" for i in range(matrix.shape[1])]
 
     def __str__(self):
-        return ""
+        strategy_table = PrettyTable(
+            title="Таблица стратегий (игрока А)",
+            field_names=("Стратегии", *self.player_b_strategy_labels, "MIN выигрыш A"),
+        )
+        # Добавляем стратегии игрока A со столбцом MIN выигрыша A.
+        strategy_table.add_rows(
+            rows=(
+                (self.player_a_strategy_labels[i], *self.game_matrix[i], min_winning)
+                for i, min_winning in enumerate(self.min_wins_player_a)
+            )
+        )
+
+        # Добавляем заключительную строку с MAX проигрышами B.
+        strategy_table.add_row(("MAX проигрыш B", *self.max_looses_player_b, " "))
+
+        return str(strategy_table)
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def min_wins_player_a(self) -> list[int | float]:
+        """Значения MIN выигрыша игрока А в матричной игре."""
+        return [min(row) for row in self.game_matrix]
+
+    @property
+    def max_looses_player_b(self) -> list[int | float]:
+        """Значения MAX проигрыша игрока B в матричной игре."""
+        return [max(column) for column in self.game_matrix.T]
+
+    def normalize_matrix(self) -> None:
+        """Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place."""
+        min_element = np.min(self.game_matrix)
+        if min_element < 0:
+            self.game_matrix += -min_element
+
+    def reduce_dimension(self, mode="dominant_absorption") -> "GameMatrix":
+        """
+        Сводит к минимуму размерность матричной игры.
+        :param str mode: Выбор метода уменьшения размерности матричной игры:
+            - `dominant_absorption` - поглощение доминируемых стратегий;
+            - `nbr_drop` - удаление NBR-стратегий.
+        :returns: Экземпляр GameMatrix с уменьшенной размерностью
+        """
+        self.drop_duplicate_strategies()
+        match mode:
+            case "dominant_absorption":
+                reduced_matrix: GameMatrix = self._dominant_absorption_reduce()
+            case "nbr_drop":
+                reduced_matrix: GameMatrix = self._nbr_drop_reduce()
+            case _:
+                exc_msg = f"Invalid mode of reducing matrix: {mode}"
+                raise MatrixGameException(exc_msg)
+
+        return reduced_matrix
+
+    def drop_duplicate_strategies(self) -> None:
+        """Удаляет дублирующиеся стратегии игроков A и B in-place."""
+        # Удаление дубликатов строк.
+        _, idx_rows = np.unique(self.game_matrix, axis=0, return_index=True)
+        self.game_matrix = self.game_matrix[np.sort(idx_rows)]
+        self.player_a_strategy_labels = [self.player_a_strategy_labels[i] for i in np.sort(idx_rows)]
+
+        # Удаление дубликатов столбцов.
+        _, idx_cols = np.unique(self.game_matrix, axis=1, return_index=True)
+        self.game_matrix = self.game_matrix[:, np.sort(idx_cols)]
+        self.player_b_strategy_labels = [self.player_b_strategy_labels[i] for i in np.sort(idx_cols)]
+
+    def _dominant_absorption_reduce(self) -> "GameMatrix":
+        """Сводит к минимуму размерность матричной игры поглощением доминируемых стратегий."""
+        # Поиск и удаление доминируемых строк
+        dominated_rows: list[int] = self.__find_dominated_rows()
+        if dominated_rows:
+            # Обновление индексов строк для удаления.
+            dominated_rows = sorted(set(dominated_rows))
+            # Удаление доминируемых строк.
+            reduced_matrix: np.array = np.delete(self.game_matrix, dominated_rows, axis=0)
+            # Обновление соответствующих стратегий игрока A.
+            player_a_strategy_labels = [
+                label for i, label in enumerate(self.player_a_strategy_labels) if i not in dominated_rows
+            ]
+            return GameMatrix(
+                reduced_matrix,
+                player_a_strategy_labels,
+                self.player_b_strategy_labels,
+            )._dominant_absorption_reduce()
+
+        # Поиск и удаление доминируемых столбцов.
+        dominated_columns: list[int] = self.__find_dominated_columns()
+        if dominated_columns:
+            # Обновление индексов столбцов для удаления.
+            dominated_columns = sorted(set(dominated_columns))
+            # Удаление доминируемых строк и столбцов.
+            reduced_matrix: np.array = np.delete(self.game_matrix, dominated_columns, axis=1)
+            # Обновление соответствующих стратегий игрока B.
+            player_b_strategy_labels = [
+                label for i, label in enumerate(self.player_b_strategy_labels) if i not in dominated_columns
+            ]
+            return GameMatrix(
+                reduced_matrix,
+                self.player_a_strategy_labels,
+                player_b_strategy_labels,
+            )._dominant_absorption_reduce()
+
+        return copy.deepcopy(self)
+
+    def _nbr_drop_reduce(self):
+        """Сводит к минимуму размерность матричной игры удалением NBR-стратегий."""
+        exc_msg = "Этот метод я пока не прошёл :("
+        raise NotImplementedError(exc_msg)
+
+    def __find_dominated_rows(self) -> list[int]:
+        """Возвращает список индексов доминируемых строк в текущей матрице."""
+        dominated_rows = []
+        # Поиск и удаление доминируемых строк
+        for i in range(self.game_matrix.shape[0]):
+            for j in range(self.game_matrix.shape[0]):
+                if i != j and all(self.game_matrix[j] >= self.game_matrix[i]):
+                    dominated_rows.append(i)
+                    msg = (
+                        f"Поглощение стратегии {self.player_a_strategy_labels[i]} "
+                        f"доминирующей стратегией {self.player_a_strategy_labels[j]}"
+                    )
+                    _logger.info(msg)
+
+            if dominated_rows:
+                break
+
+        return dominated_rows
+
+    def __find_dominated_columns(self) -> list[int]:
+        """Возвращает список индексов доминируемых столбцов в текущей матрице."""
+        dominated_columns = []
+        for i in range(self.game_matrix.shape[1]):
+            for j in range(self.game_matrix.shape[1]):
+                if i != j and all(self.game_matrix[:, j] <= self.game_matrix[:, i]):
+                    dominated_columns.append(i)
+                    msg = (
+                        f"Поглощение стратегии {self.player_b_strategy_labels[i]} "
+                        f"доминирующей стратегией {self.player_b_strategy_labels[j]}"
+                    )
+                    _logger.info(msg)
+
+            if dominated_columns:
+                break
+
+        return dominated_columns
