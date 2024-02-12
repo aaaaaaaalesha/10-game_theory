@@ -6,6 +6,7 @@ import numpy as np
 from prettytable import PrettyTable
 
 from .exceptions import MatrixGameException
+from .types import IndexType, ValueType
 
 _logger = logging.getLogger(__name__)
 
@@ -49,20 +50,44 @@ class GameMatrix:
         return str(self)
 
     @property
-    def min_wins_player_a(self) -> list[int | float]:
+    def min_wins_player_a(self) -> np.array:
         """Значения MIN выигрыша игрока А в матричной игре."""
-        return [min(row) for row in self.game_matrix]
+        return np.array([min(row) for row in self.game_matrix])
 
     @property
-    def max_looses_player_b(self) -> list[int | float]:
+    def max_looses_player_b(self) -> np.array:
         """Значения MAX проигрыша игрока B в матричной игре."""
-        return [max(column) for column in self.game_matrix.T]
+        return np.array([max(column) for column in self.game_matrix.T])
+
+    @property
+    def lower_game_price(self) -> tuple[IndexType, ValueType]:
+        """Возвращает индекс и значение нижней цены игры (максимин, max_j min_i c_{ij})"""
+        low_price_index: int = np.argmax(self.min_wins_player_a, axis=0)
+        return low_price_index, self.min_wins_player_a[low_price_index]
+
+    @property
+    def upper_game_price(self) -> tuple[IndexType, ValueType]:
+        """Возвращает индекс и значение верхней цены игры (минимакс, min_i max_j c_{ij})"""
+        upper_price_index: int = np.argmin(self.max_looses_player_b, axis=0)
+        return upper_price_index, self.max_looses_player_b[upper_price_index]
 
     def normalize_matrix(self) -> None:
         """Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place."""
         min_element = np.min(self.game_matrix)
         if min_element < 0:
             self.game_matrix += -min_element
+
+    def drop_duplicate_strategies(self) -> None:
+        """Удаляет дублирующиеся стратегии игроков A и B in-place."""
+        # Удаление дубликатов строк.
+        _, idx_rows = np.unique(self.game_matrix, axis=0, return_index=True)
+        self.game_matrix = self.game_matrix[np.sort(idx_rows)]
+        self.player_a_strategy_labels = [self.player_a_strategy_labels[i] for i in np.sort(idx_rows)]
+
+        # Удаление дубликатов столбцов.
+        _, idx_cols = np.unique(self.game_matrix, axis=1, return_index=True)
+        self.game_matrix = self.game_matrix[:, np.sort(idx_cols)]
+        self.player_b_strategy_labels = [self.player_b_strategy_labels[i] for i in np.sort(idx_cols)]
 
     def reduce_dimension(self, mode="dominant_absorption") -> "GameMatrix":
         """
@@ -83,18 +108,6 @@ class GameMatrix:
                 raise MatrixGameException(exc_msg)
 
         return reduced_matrix
-
-    def drop_duplicate_strategies(self) -> None:
-        """Удаляет дублирующиеся стратегии игроков A и B in-place."""
-        # Удаление дубликатов строк.
-        _, idx_rows = np.unique(self.game_matrix, axis=0, return_index=True)
-        self.game_matrix = self.game_matrix[np.sort(idx_rows)]
-        self.player_a_strategy_labels = [self.player_a_strategy_labels[i] for i in np.sort(idx_rows)]
-
-        # Удаление дубликатов столбцов.
-        _, idx_cols = np.unique(self.game_matrix, axis=1, return_index=True)
-        self.game_matrix = self.game_matrix[:, np.sort(idx_cols)]
-        self.player_b_strategy_labels = [self.player_b_strategy_labels[i] for i in np.sort(idx_cols)]
 
     def _dominant_absorption_reduce(self) -> "GameMatrix":
         """Сводит к минимуму размерность матричной игры поглощением доминируемых стратегий."""
