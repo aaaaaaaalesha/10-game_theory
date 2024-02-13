@@ -3,6 +3,7 @@
 Copyright 2020 Alexey Alexandrov
 """
 import logging
+import warnings
 
 import numpy as np
 from prettytable import PrettyTable
@@ -10,6 +11,8 @@ from prettytable import PrettyTable
 from .exceptions import SimplexProblemException
 
 _logger = logging.getLogger(__name__)
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 class SimplexTable:

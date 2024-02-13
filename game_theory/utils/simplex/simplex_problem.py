@@ -87,8 +87,8 @@ class SimplexProblem:
         """
         if self.solution is not None:
             var_values, target_value = self.solution
-            var_values_literal: str = ", ".join(f"{var_value:.2f}" for var_value in var_values)
-            msg = f"Решение задачи уже получено: ({var_values_literal}); F = {target_value:.2f}"
+            var_values_literal: str = ", ".join(f"{var_value:.3f}" for var_value in var_values)
+            msg = f"Решение задачи уже получено: ({var_values_literal}); F = {target_value:.3f}"
             _logger.warning(msg)
             return self.solution
 
