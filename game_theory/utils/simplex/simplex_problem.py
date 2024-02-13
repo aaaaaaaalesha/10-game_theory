@@ -10,6 +10,7 @@ import numpy as np
 
 from .exceptions import SimplexProblemException
 from .simplex_table import SimplexTable
+from .types import Solution, TargetFunctionValue, ValueType, VariableNames, VariableValues
 
 _logger = logging.getLogger(__name__)
 
@@ -36,6 +37,8 @@ class SimplexProblem:
         self.constraint_system_rhs_ = np.array(json_data["constraint_system_rhs"])
         # Направление задачи (min или max)
         self.func_direction_ = json_data["func_direction"]
+        # Найденное решение задачи (вектор значений переменных и значение целевой функции).
+        self.solution: Solution | None = None
 
         if len(self.constraint_system_rhs_) != self.constraint_system_rhs_.shape[0]:
             exc_msg = "Ошибка при вводе данных. Число строк в матрице" "и столбце ограничений не совпадает."
@@ -71,20 +74,30 @@ class SimplexProblem:
         """Условие задачи для отображения в Jupyter."""
         return str(self)
 
-    def solve(self) -> float:
+    @property
+    def dummy_variables(self) -> tuple[VariableNames, VariableValues]:
+        """Имена и значения фиктивных переменных."""
+        dummy_variables_names: list[str] = self.simplex_table_.top_row_[2:]
+        return dummy_variables_names, [0] * len(dummy_variables_names)
+
+    def solve(self) -> Solution:
         """
         Запуск решения задачи.
-        :returns: Значение целевой функции F после оптимизации.
+        :returns: Оптимальное решение задачи ЛП: вектор значений переменных и значение целевой функции.
         """
-        _logger.info("Процесс решения:")
-        self.reference_solution()
-        self.optimal_solution()
+        if self.solution is not None:
+            var_values, target_value = self.solution
+            var_values_literal: str = ", ".join(f"{var_value:.2f}" for var_value in var_values)
+            msg = f"Решение задачи уже получено: ({var_values_literal}); F = {target_value:.2f}"
+            _logger.warning(msg)
+            return self.solution
 
-        last_row_ind: int = self.simplex_table_.main_table_.shape[0] - 1
-        return self.simplex_table_.main_table_[last_row_ind][0]
+        _logger.info("Процесс решения:")
+        self._reference_solution()
+        return self._optimal_solution()
 
     # Этап 1. Поиск опорного решения.
-    def reference_solution(self):
+    def _reference_solution(self):
         """Поиск опорного решения."""
         _logger.info(
             "\n".join(
@@ -99,9 +112,9 @@ class SimplexProblem:
             self.simplex_table_.search_ref_solution()
 
         _logger.info("Опорное решение найдено!")
-        self.__output_solution()
+        return self.__output_solution()
 
-    def optimal_solution(self) -> None:
+    def _optimal_solution(self) -> Solution:
         """Поиск оптимального решения."""
         _logger.info("Поиск оптимального решения:")
         while not self.simplex_table_.is_find_opt_solution():
@@ -113,20 +126,21 @@ class SimplexProblem:
             table_rows_count: int = self.simplex_table_.main_table_.shape[0]
             self.simplex_table_.main_table_[table_rows_count - 1][0] *= -1
 
+        self.solution = self.__collect_solution()
         _logger.info("Оптимальное решение найдено!")
         self.__output_solution()
+        return self.solution
 
     def __output_solution(self) -> None:
         """
         Метод выводит текущее решение.
         Используется для вывода опорного и оптимального решений.
         """
-        fict_vars = self.simplex_table_.top_row_[2:]
-        last_row_ind = self.simplex_table_.main_table_.shape[0] - 1
-
+        dummy_vars: tuple[VariableNames, VariableValues] = self.dummy_variables
         # Output dummy variables =0 values.
-        _logger.info("".join([*[f"{var} = " for var in fict_vars], "0, "]))
+        _logger.info("".join([*[f"{var} = " for var in dummy_vars[0]], "0, "]))
 
+        last_row_ind: int = self.simplex_table_.main_table_.shape[0] - 1
         # Output rest variables and its values.
         _logger.info(
             ", ".join(
@@ -141,3 +155,25 @@ class SimplexProblem:
             "Целевая функция: F = %.2f",
             self.simplex_table_.main_table_[last_row_ind][0],
         )
+
+    def __collect_solution(self) -> Solution:
+        """
+        Формирует решение задачи ЛП симплекс-методом.
+        :returns Solution: Найденные оптимальные значения переменных и целевой функции.
+        """
+        # Заполняем словарь с именами переменных и их значениями.
+        vars_to_values: dict[str, ValueType] = {
+            dummy_var_name: 0 for dummy_var_name in self.simplex_table_.top_row_[2:]
+        }
+        rows_count: int = self.simplex_table_.main_table_.shape[0]
+        for i in range(rows_count - 1):
+            vars_to_values[self.simplex_table_.left_column_[i]] = self.simplex_table_.main_table_[i][0]
+
+        # Расставляем значения по местам в векторе значений [x1, x2, ..., xn].
+        values_vector: VariableValues = [0] * len(vars_to_values)
+        for var_name, var_value in vars_to_values.items():
+            values_vector[int(var_name[1:]) - 1] = var_value
+
+        # Возвращаем сформированное решение.
+        target_function_value: TargetFunctionValue = self.simplex_table_.main_table_[rows_count - 1][0]
+        return values_vector, target_function_value

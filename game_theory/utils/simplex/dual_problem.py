@@ -12,6 +12,7 @@ import numpy as np
 from .exceptions import DualProblemException
 from .simplex_problem import SimplexProblem
 from .simplex_table import SimplexTable
+from .types import Solution
 
 _logger = logging.getLogger(__name__)
 
@@ -42,6 +43,9 @@ class DualProblem(SimplexProblem):
 
         # Минимизация ЦФ в ПЗ соответствует максимизации ЦФ в ДЗ.
         self.func_direction_ = "max" if input_data["func_direction"] == "min" else "min"
+
+        # Найденное решение задачи (вектор значений переменных и значение целевой функции).
+        self.solution: Solution | None = None
 
         _logger.info(str(self))
 
