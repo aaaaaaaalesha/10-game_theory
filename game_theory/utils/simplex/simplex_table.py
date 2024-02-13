@@ -3,17 +3,11 @@
 Copyright 2020 Alexey Alexandrov
 """
 import logging
-import warnings
 
 import numpy as np
 from prettytable import PrettyTable
 
 from .exceptions import SimplexProblemException
-
-# Определяет число знаков при округлении.
-ROUND_CONST = 4
-
-warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 _logger = logging.getLogger(__name__)
 
@@ -28,7 +22,7 @@ class SimplexTable:
         constraint_system_rhs: np.array,
     ):
         """
-        :param obj_func_coffs: коэффициенты ЦФ.
+        :param obj_func_coffs: Коэффициенты ЦФ.
         :param constraint_system_lhs: Левая часть системы ограничений.
         :param constraint_system_rhs: Правая часть системы ограничений.
         """
@@ -43,19 +37,18 @@ class SimplexTable:
         self.main_table_ = np.zeros((constraint_count + 1, var_count + 1))
         # Заполняем столбец Si0.
         for i in range(constraint_count):
-            self.main_table_[i][0] = round(constraint_system_rhs[i], ROUND_CONST)
+            self.main_table_[i][0] = constraint_system_rhs[i]
         # Заполняем строку F.
         for j in range(var_count):
-            self.main_table_[constraint_count][j + 1] = -round(obj_func_coffs[j], ROUND_CONST)
+            self.main_table_[constraint_count][j + 1] = -obj_func_coffs[j]
 
         # Заполняем А.
         for i in range(constraint_count):
             for j in range(var_count):
-                self.main_table_[i][j + 1] = round(constraint_system_lhs[i][j], ROUND_CONST)
+                self.main_table_[i][j + 1] = constraint_system_lhs[i][j]
 
     def __str__(self):
-        table = PrettyTable()
-        table.field_names = self.top_row_
+        table = PrettyTable(self.top_row_, float_format=".4")
         for i in range(self.main_table_.shape[0]):
             table.add_row([self.left_column_[i], *self.main_table_[i]])
 
@@ -185,17 +178,17 @@ class SimplexTable:
         """
         recalced_table = np.zeros((self.main_table_.shape[0], self.main_table_.shape[1]))
         # Пересчёт разрешающего элемента.
-        recalced_table[res_row][res_col] = round(1 / res_element, ROUND_CONST)
+        recalced_table[res_row][res_col] = 1 / res_element
 
         # Пересчёт разрешающей строки.
         for j in range(self.main_table_.shape[1]):
             if j != res_col:
-                recalced_table[res_row][j] = round(self.main_table_[res_row][j] / res_element, ROUND_CONST)
+                recalced_table[res_row][j] = self.main_table_[res_row][j] / res_element
 
         # Пересчёт разрешающего столбца.
         for i in range(self.main_table_.shape[0]):
             if i != res_row:
-                recalced_table[i][res_col] = -round((self.main_table_[i][res_col] / res_element), ROUND_CONST)
+                recalced_table[i][res_col] = -(self.main_table_[i][res_col] / res_element)
 
         # Пересчёт оставшейся части таблицы.
         for i in range(self.main_table_.shape[0]):
@@ -207,7 +200,7 @@ class SimplexTable:
                 value = self.main_table_[i][j] - (
                     (self.main_table_[i][res_col] * self.main_table_[res_row][j]) / res_element
                 )
-                recalced_table[i][j] = round(value, ROUND_CONST)
+                recalced_table[i][j] = value
 
         self.main_table_ = recalced_table
         self.swap_headers(res_row, res_col)

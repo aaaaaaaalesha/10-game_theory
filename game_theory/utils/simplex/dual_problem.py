@@ -1,6 +1,5 @@
 """
 Двойственная задача ЛП и решение симплекс-методом.
-
 Copyright 2020 Alexey Alexandrov
 """
 import json

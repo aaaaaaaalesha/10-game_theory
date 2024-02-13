@@ -1,6 +1,6 @@
 """
+Задача ЛП и решение симплекс-методом.
 Copyright 2020 Alexey Alexandrov
-
 """
 import json
 import logging
@@ -99,15 +99,8 @@ class SimplexProblem:
     # Этап 1. Поиск опорного решения.
     def _reference_solution(self):
         """Поиск опорного решения."""
-        _logger.info(
-            "\n".join(
-                (
-                    "Поиск опорного решения:",
-                    "Исходная симплекс-таблица:",
-                    str(self.simplex_table_),
-                )
-            )
-        )
+        log_msg: str = f"Поиск опорного решения: \n" f"Исходная симплекс-таблица:\n" f"{self.simplex_table_}"
+        _logger.info(log_msg)
         while not self.simplex_table_.is_find_ref_solution():
             self.simplex_table_.search_ref_solution()
 
@@ -137,24 +130,21 @@ class SimplexProblem:
         Используется для вывода опорного и оптимального решений.
         """
         dummy_vars: tuple[VariableNames, VariableValues] = self.dummy_variables
-        # Output dummy variables =0 values.
+        # Выводим фиктивные переменные со значениями, равными нулю.
         _logger.info("".join([*[f"{var} = " for var in dummy_vars[0]], "0, "]))
 
         last_row_ind: int = self.simplex_table_.main_table_.shape[0] - 1
-        # Output rest variables and its values.
-        _logger.info(
-            ", ".join(
-                [
-                    f"{self.simplex_table_.left_column_[i]} = {self.simplex_table_.main_table_[i][0]:.2f}"
-                    for i in range(last_row_ind)
-                ]
-            )
+        # Выводим оставшиеся переменные и их значения.
+        log_msg: str = ", ".join(
+            [
+                f"{self.simplex_table_.left_column_[i]} = {self.simplex_table_.main_table_[i][0]:.3f}"
+                for i in range(last_row_ind)
+            ]
         )
-
-        _logger.info(
-            "Целевая функция: F = %.2f",
-            self.simplex_table_.main_table_[last_row_ind][0],
-        )
+        _logger.info(log_msg)
+        # Выводим значение целевой функции.
+        log_msg = f"Целевая функция: F = {self.simplex_table_.main_table_[last_row_ind][0]:.3f}"
+        _logger.info(log_msg)
 
     def __collect_solution(self) -> Solution:
         """
@@ -165,8 +155,8 @@ class SimplexProblem:
         vars_to_values: dict[str, ValueType] = {
             dummy_var_name: 0 for dummy_var_name in self.simplex_table_.top_row_[2:]
         }
-        rows_count: int = self.simplex_table_.main_table_.shape[0]
-        for i in range(rows_count - 1):
+        last_row_ind: int = self.simplex_table_.main_table_.shape[0] - 1
+        for i in range(last_row_ind):
             vars_to_values[self.simplex_table_.left_column_[i]] = self.simplex_table_.main_table_[i][0]
 
         # Расставляем значения по местам в векторе значений [x1, x2, ..., xn].
@@ -175,5 +165,5 @@ class SimplexProblem:
             values_vector[int(var_name[1:]) - 1] = var_value
 
         # Возвращаем сформированное решение.
-        target_function_value: TargetFunctionValue = self.simplex_table_.main_table_[rows_count - 1][0]
+        target_function_value: TargetFunctionValue = self.simplex_table_.main_table_[last_row_ind][0]
         return values_vector, target_function_value
