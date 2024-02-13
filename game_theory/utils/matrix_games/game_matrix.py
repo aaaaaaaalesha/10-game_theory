@@ -47,6 +47,7 @@ class GameMatrix:
         return str(strategy_table)
 
     def __repr__(self):
+        """Для корректного отображения в Jupyter."""
         return str(self)
 
     @property

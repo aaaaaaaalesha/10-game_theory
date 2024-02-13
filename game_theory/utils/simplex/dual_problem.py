@@ -77,7 +77,7 @@ class DualProblem(SimplexProblem):
         return "\n".join(
             [
                 f"F = cx -> {self.func_direction_},",
-                "Ax >= 1,",
+                "Ax >= b,",
                 "x1, x2, ..., xn >= 0",
                 f"C = {multiplier * self.obj_func_coffs_}",
                 f"A =\n{self.constraint_system_lhs_},",
