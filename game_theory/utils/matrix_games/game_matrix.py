@@ -61,13 +61,13 @@ class GameMatrix:
         return np.array([max(column) for column in self.game_matrix.T])
 
     @property
-    def lower_game_price(self) -> tuple[IndexType, ValueType]:
+    def lowest_game_price(self) -> tuple[IndexType, ValueType]:
         """Возвращает индекс и значение нижней цены игры (максимин, max_j min_i c_{ij})"""
         low_price_index: int = np.argmax(self.min_wins_player_a, axis=0)
         return low_price_index, self.min_wins_player_a[low_price_index]
 
     @property
-    def upper_game_price(self) -> tuple[IndexType, ValueType]:
+    def highest_game_price(self) -> tuple[IndexType, ValueType]:
         """Возвращает индекс и значение верхней цены игры (минимакс, min_i max_j c_{ij})"""
         upper_price_index: int = np.argmin(self.max_looses_player_b, axis=0)
         return upper_price_index, self.max_looses_player_b[upper_price_index]
