@@ -40,8 +40,10 @@ ruff = "^0.2.1"
 src = ["game_theory"]
 # Allow lines length.
 line-length = 120
-# Whether to show an enumeration of all fixed lint violations
+# Whether to show an enumeration of all fixed lint violations.
 show-fixes = true
+# Also scan Jupyter Notebooks.
+extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 # A list of rule codes or prefixes to enable,
