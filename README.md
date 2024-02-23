@@ -7,6 +7,9 @@
   <a href="https://github.com/astral-sh/ruff">
       <img alt="Code style: Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json" >
   </a>
+  <a href="https://github.com/aaaaaaaalesha/10-game_theory/actions/workflows/github-code-scanning/codeql">
+      <img alt="CodeQL" src="https://github.com/aaaaaaaalesha/10-game_theory/actions/workflows/github-code-scanning/codeql/badge.svg" >
+  </a>
   <a href="https://wakatime.com/badge/user/0e21c3c1-25e0-47ee-9c0f-77ef4b6b71e2/project/018c9823-7706-4998-af38-9a8734cf127a">
       <img alt="Wakatime" src="https://wakatime.com/badge/user/0e21c3c1-25e0-47ee-9c0f-77ef4b6b71e2/project/018c9823-7706-4998-af38-9a8734cf127a.svg" >
   </a>
