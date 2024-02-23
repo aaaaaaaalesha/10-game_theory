@@ -21,7 +21,7 @@ class GameMatrix:
         player_a_strategy_labels: list[str] | None = None,
         player_b_strategy_labels: list[str] | None = None,
     ):
-        self.game_matrix: np.array = matrix
+        self.matrix: np.array = matrix
         self.player_a_strategy_labels = player_a_strategy_labels
         self.player_b_strategy_labels = player_b_strategy_labels
         if player_a_strategy_labels is None:
@@ -37,7 +37,7 @@ class GameMatrix:
         # Добавляем стратегии игрока A со столбцом MIN выигрыша A.
         strategy_table.add_rows(
             rows=(
-                (self.player_a_strategy_labels[i], *self.game_matrix[i], min_winning)
+                (self.player_a_strategy_labels[i], *self.matrix[i], min_winning)
                 for i, min_winning in enumerate(self.min_wins_player_a)
             )
         )
@@ -54,12 +54,12 @@ class GameMatrix:
     @property
     def min_wins_player_a(self) -> np.array:
         """Значения MIN выигрыша игрока А в матричной игре."""
-        return np.array([min(row) for row in self.game_matrix])
+        return np.array([min(row) for row in self.matrix])
 
     @property
     def max_looses_player_b(self) -> np.array:
         """Значения MAX проигрыша игрока B в матричной игре."""
-        return np.array([max(column) for column in self.game_matrix.T])
+        return np.array([max(column) for column in self.matrix.T])
 
     @property
     def lowest_game_price(self) -> tuple[IndexType, ValueType]:
@@ -75,20 +75,20 @@ class GameMatrix:
 
     def normalize_matrix(self) -> None:
         """Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place."""
-        min_element = np.min(self.game_matrix)
+        min_element = np.min(self.matrix)
         if min_element < 0:
-            self.game_matrix += -min_element
+            self.matrix += -min_element
 
     def drop_duplicate_strategies(self) -> None:
         """Удаляет дублирующиеся стратегии игроков A и B in-place."""
         # Удаление дубликатов строк.
-        _, idx_rows = np.unique(self.game_matrix, axis=0, return_index=True)
-        self.game_matrix = self.game_matrix[np.sort(idx_rows)]
+        _, idx_rows = np.unique(self.matrix, axis=0, return_index=True)
+        self.matrix = self.matrix[np.sort(idx_rows)]
         self.player_a_strategy_labels = [self.player_a_strategy_labels[i] for i in np.sort(idx_rows)]
 
         # Удаление дубликатов столбцов.
-        _, idx_cols = np.unique(self.game_matrix, axis=1, return_index=True)
-        self.game_matrix = self.game_matrix[:, np.sort(idx_cols)]
+        _, idx_cols = np.unique(self.matrix, axis=1, return_index=True)
+        self.matrix = self.matrix[:, np.sort(idx_cols)]
         self.player_b_strategy_labels = [self.player_b_strategy_labels[i] for i in np.sort(idx_cols)]
 
     def reduce_dimension(self, method="dominant_absorption") -> "GameMatrix":
@@ -127,7 +127,7 @@ class GameMatrix:
             # Обновление индексов строк для удаления.
             useless_rows: list[IndexType] = sorted(useless_rows)
             # Удаление доминируемых строк.
-            reduced_matrix: np.array = np.delete(self.game_matrix, useless_rows, axis=0)
+            reduced_matrix: np.array = np.delete(self.matrix, useless_rows, axis=0)
             # Обновление соответствующих стратегий игрока A.
             player_a_strategy_labels = [
                 label for i, label in enumerate(self.player_a_strategy_labels) if i not in useless_rows
@@ -144,7 +144,7 @@ class GameMatrix:
             # Обновление индексов столбцов для удаления.
             useless_columns: list[IndexType] = sorted(useless_columns)
             # Удаление доминируемых строк и столбцов.
-            reduced_matrix: np.array = np.delete(self.game_matrix, useless_columns, axis=1)
+            reduced_matrix: np.array = np.delete(self.matrix, useless_columns, axis=1)
             # Обновление соответствующих стратегий игрока B.
             player_b_strategy_labels = [
                 label for i, label in enumerate(self.player_b_strategy_labels) if i not in useless_columns
@@ -170,20 +170,20 @@ class GameMatrix:
                 # `>=` для строк; стратегии игрока A по строкам.
                 comparison_op: ComparisonOperator = operator.ge
                 player_strategy_labels: list[str] = self.player_a_strategy_labels
-                game_matrix: np.array = self.game_matrix
+                game_matrix: np.array = self.matrix
             case 1:
                 # `<=` для столбцов; стратегии игрока B по столбцам.
                 comparison_op: ComparisonOperator = operator.le
                 player_strategy_labels: list[str] = self.player_b_strategy_labels
-                game_matrix: np.array = self.game_matrix.T
+                game_matrix: np.array = self.matrix.T
             case _:
                 exc_msg = f"Invalid parameter `axis`: {axis}. Must be 0 or 1."
                 raise MatrixGameException(exc_msg)
 
         dominated_vectors_indexes = set()
         # Поиск доминируемых векторов (строк/столбцов).
-        for i in range(self.game_matrix.shape[axis]):
-            for j in range(self.game_matrix.shape[axis]):
+        for i in range(self.matrix.shape[axis]):
+            for j in range(self.matrix.shape[axis]):
                 if i == j or i in dominated_vectors_indexes:
                     continue
 
@@ -210,12 +210,12 @@ class GameMatrix:
                 # `np.argmax` для выбора лучших стратегий игрока A.
                 arg_extremum = np.argmax
                 player_strategy_labels: list[str] = self.player_a_strategy_labels
-                game_matrix: np.array = self.game_matrix.T
+                game_matrix: np.array = self.matrix.T
             case 1:
                 # `np.argmax` для выбора лучших стратегий игрока B.
                 arg_extremum = np.argmin
                 player_strategy_labels: list[str] = self.player_b_strategy_labels
-                game_matrix: np.array = self.game_matrix
+                game_matrix: np.array = self.matrix
             case _:
                 exc_msg = f"Invalid parameter `axis`: {axis}. Must be 0 or 1."
                 raise MatrixGameException(exc_msg)
