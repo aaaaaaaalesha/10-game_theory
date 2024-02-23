@@ -64,13 +64,13 @@ class GameMatrix:
     @property
     def lowest_game_price(self) -> tuple[IndexType, ValueType]:
         """Возвращает индекс и значение нижней цены игры (максимин, max_j min_i c_{ij})"""
-        low_price_index: int = np.argmax(self.min_wins_player_a, axis=0)
+        low_price_index: IndexType = np.argmax(self.min_wins_player_a, axis=0)
         return low_price_index, self.min_wins_player_a[low_price_index]
 
     @property
     def highest_game_price(self) -> tuple[IndexType, ValueType]:
         """Возвращает индекс и значение верхней цены игры (минимакс, min_i max_j c_{ij})"""
-        upper_price_index: int = np.argmin(self.max_looses_player_b, axis=0)
+        upper_price_index: IndexType = np.argmin(self.max_looses_player_b, axis=0)
         return upper_price_index, self.max_looses_player_b[upper_price_index]
 
     def normalize_matrix(self) -> None:
@@ -91,73 +91,73 @@ class GameMatrix:
         self.game_matrix = self.game_matrix[:, np.sort(idx_cols)]
         self.player_b_strategy_labels = [self.player_b_strategy_labels[i] for i in np.sort(idx_cols)]
 
-    def reduce_dimension(self, mode="dominant_absorption") -> "GameMatrix":
+    def reduce_dimension(self, method="dominant_absorption") -> "GameMatrix":
         """
         Сводит к минимуму размерность матричной игры.
-        :param str mode: Выбор метода уменьшения размерности матричной игры:
+        :param str method: Выбор метода уменьшения размерности матричной игры:
             - `dominant_absorption` - поглощение доминируемых стратегий;
             - `nbr_drop` - удаление NBR-стратегий.
         :returns: Экземпляр GameMatrix с уменьшенной размерностью.
         """
         self.drop_duplicate_strategies()
-        match mode:
-            case "dominant_absorption":
-                reduced_matrix: GameMatrix = self._dominant_absorption_reduce()
-            case "nbr_drop":
-                reduced_matrix: GameMatrix = self._nbr_drop_reduce()
-            case _:
-                exc_msg = f"Invalid mode of reducing matrix: {mode}"
-                raise MatrixGameException(exc_msg)
+        if method not in ("dominant_absorption", "nbr_drop"):
+            exc_msg = f"Invalid mode of reducing matrix: {method}"
+            raise MatrixGameException(exc_msg)
 
+        reduced_matrix: GameMatrix = self._base_game_reduce(method=method)
         return reduced_matrix
 
-    def _dominant_absorption_reduce(self) -> "GameMatrix":
+    def _base_game_reduce(self, method="dominant_absorption") -> "GameMatrix":
         """
-        Сводит к минимуму размерность матричной игры поглощением доминируемых стратегий.
+        Сводит к минимуму размерность матричной игры поглощением стратегий.
         :returns: Экземпляр GameMatrix с уменьшенной размерностью.
         """
-        # Поиск и удаление доминируемых строк
-        dominated_rows: set[int] = self.__find_dominated_vectors(axis=0)
-        if dominated_rows:
+        match method:
+            case "dominant_absorption":
+                useless_finder = self.__find_dominated_vectors
+            case "nbr_drop":
+                useless_finder = self.__find_nbr_vectors
+            case _:
+                exc_msg = f"Invalid mode of reducing matrix: {method}"
+                raise MatrixGameException(exc_msg)
+
+        # Поиск и удаление доминируемых строк.
+        useless_rows: set[IndexType] = useless_finder(axis=0)
+        if useless_rows:
             # Обновление индексов строк для удаления.
-            dominated_rows: list[int] = sorted(dominated_rows)
+            useless_rows: list[IndexType] = sorted(useless_rows)
             # Удаление доминируемых строк.
-            reduced_matrix: np.array = np.delete(self.game_matrix, dominated_rows, axis=0)
+            reduced_matrix: np.array = np.delete(self.game_matrix, useless_rows, axis=0)
             # Обновление соответствующих стратегий игрока A.
             player_a_strategy_labels = [
-                label for i, label in enumerate(self.player_a_strategy_labels) if i not in dominated_rows
+                label for i, label in enumerate(self.player_a_strategy_labels) if i not in useless_rows
             ]
             return GameMatrix(
                 reduced_matrix,
                 player_a_strategy_labels,
                 self.player_b_strategy_labels,
-            )._dominant_absorption_reduce()
+            )._base_game_reduce(method=method)
 
         # Поиск и удаление доминируемых столбцов.
-        dominated_columns: set[int] = self.__find_dominated_vectors(axis=1)
-        if dominated_columns:
+        useless_columns: set[IndexType] = useless_finder(axis=1)
+        if useless_columns:
             # Обновление индексов столбцов для удаления.
-            dominated_columns: list[int] = sorted(dominated_columns)
+            useless_columns: list[IndexType] = sorted(useless_columns)
             # Удаление доминируемых строк и столбцов.
-            reduced_matrix: np.array = np.delete(self.game_matrix, dominated_columns, axis=1)
+            reduced_matrix: np.array = np.delete(self.game_matrix, useless_columns, axis=1)
             # Обновление соответствующих стратегий игрока B.
             player_b_strategy_labels = [
-                label for i, label in enumerate(self.player_b_strategy_labels) if i not in dominated_columns
+                label for i, label in enumerate(self.player_b_strategy_labels) if i not in useless_columns
             ]
             return GameMatrix(
                 reduced_matrix,
                 self.player_a_strategy_labels,
                 player_b_strategy_labels,
-            )._dominant_absorption_reduce()
+            )._base_game_reduce(method=method)
 
         return copy.deepcopy(self)
 
-    def _nbr_drop_reduce(self):
-        """Сводит к минимуму размерность матричной игры удалением NBR-стратегий."""
-        exc_msg = "Этот метод я пока не прошёл :("
-        raise NotImplementedError(exc_msg)
-
-    def __find_dominated_vectors(self, axis=0) -> set[int]:
+    def __find_dominated_vectors(self, axis=0) -> set[IndexType]:
         """
         Возвращает множество индексов доминируемых строк (столбцов) в текущей матрице.
         :param int axis: Выбор координаты (строка/столбец); принимает 0 или 1.
@@ -165,7 +165,6 @@ class GameMatrix:
             - axis = 1 - нахождение доминирующих столбцов.
         :return: Множество индексов доминируемых срок/столбцов в текущей матрице.
         """
-
         match axis:
             case 0:
                 # `>=` для строк; стратегии игрока A по строкам.
@@ -197,3 +196,35 @@ class GameMatrix:
                     _logger.info(msg)
 
         return dominated_vectors_indexes
+
+    def __find_nbr_vectors(self, axis=0) -> set[IndexType]:
+        """
+        Возвращает множество индексов NBR-строк (столбцов) в текущей матрице.
+        :param int axis: Выбор координаты (строка/столбец); принимает 0 или 1.
+            - axis = 0 (default) - нахождение NBR-строк;
+            - axis = 1 - нахождение NBR-столбцов.
+        :return: Множество индексов NBR-срок/столбцов в текущей матрице.
+        """
+        match axis:
+            case 0:
+                # `np.argmax` для выбора лучших стратегий игрока A.
+                arg_extremum = np.argmax
+                player_strategy_labels: list[str] = self.player_a_strategy_labels
+                game_matrix: np.array = self.game_matrix.T
+            case 1:
+                # `np.argmax` для выбора лучших стратегий игрока B.
+                arg_extremum = np.argmin
+                player_strategy_labels: list[str] = self.player_b_strategy_labels
+                game_matrix: np.array = self.game_matrix
+            case _:
+                exc_msg = f"Invalid parameter `axis`: {axis}. Must be 0 or 1."
+                raise MatrixGameException(exc_msg)
+
+        # Для фиксированной стратегии игрока A (B) смотрим, какие при этом стратегии использует игрок B (A).
+        # Те из них, что он не использует - вычёркиваем (логично же, ну).
+        player_used_strategies: set[IndexType] = {arg_extremum(vec) for vec in game_matrix}
+        useless_strategies: set[IndexType] = set(range(game_matrix.shape[1])) - player_used_strategies
+        if useless_strategies:
+            msg = f"Удаление NBR-стратегий {[player_strategy_labels[i] for i in useless_strategies]}"
+            _logger.info(msg)
+        return useless_strategies
