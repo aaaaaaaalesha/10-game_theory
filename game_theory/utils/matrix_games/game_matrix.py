@@ -51,6 +51,15 @@ class GameMatrix:
         """Для корректного отображения в Jupyter."""
         return str(self)
 
+    def __eq__(self, other: "GameMatrix"):
+        return all(
+            (
+                (self.matrix == other.matrix).all(),
+                self.player_a_strategy_labels == other.player_a_strategy_labels,
+                self.player_b_strategy_labels == other.player_b_strategy_labels,
+            )
+        )
+
     @property
     def min_wins_player_a(self) -> np.array:
         """Значения MIN выигрыша игрока А в матричной игре."""
