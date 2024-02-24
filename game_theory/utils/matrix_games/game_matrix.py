@@ -200,7 +200,8 @@ class GameMatrix:
                 if all(comparison_op(game_matrix[j], game_matrix[i])):
                     dominated_vectors_indexes.add(i)
                     msg = (
-                        f"Поглощение стратегии {player_strategy_labels[i]} "
+                        f"{player_strategy_labels[j]} ≻ {player_strategy_labels[i]}: "
+                        f"поглощение стратегии {player_strategy_labels[i]} "
                         f"доминирующей стратегией {player_strategy_labels[j]}"
                     )
                     _logger.info(msg)
