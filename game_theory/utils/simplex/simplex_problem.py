@@ -57,14 +57,12 @@ class SimplexProblem:
         )
 
     def __str__(self):
-        """Условие задачи."""
+        """Вывод условия прямой задачи ЛП."""
         return "\n".join(
             (
-                "Условие задачи:",
-                "Найти вектор x = (x1,x2,..., xn)^T как решение след. задачи:",
-                f"F = cx -> {self.func_direction_},",
+                f"F = c⋅x -> {self.func_direction_},",
                 "Ax <= b,\nx1,x2, ..., xn >= 0",
-                f"C = {self.obj_func_coffs_},",
+                f"c^T = {self.obj_func_coffs_},",
                 f"A =\n{self.constraint_system_lhs_},",
                 f"b^T = {self.constraint_system_rhs_}.",
             )

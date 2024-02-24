@@ -33,16 +33,12 @@ class DualProblem(SimplexProblem):
 
         # Коэффициенты при ЦФ в ДЗ равны свободным членам ограничений в ПЗ.
         self.obj_func_coffs_ = np.array(input_data["constraint_system_rhs"])
-
         # Свободные члены ограничений в ДЗ равны коэффициентам при ЦФ в ПЗ.
         self.constraint_system_lhs_ = np.array(input_data["constraint_system_lhs"]).transpose()
-
-        # Коэффициенты  любого ограничения ДЗ равны коэффициентам при одной переменной из всех ограничений ПЗ.
+        # Коэффициенты любого ограничения ДЗ равны коэффициентам при одной переменной из всех ограничений ПЗ.
         self.constraint_system_rhs_ = np.array(input_data["obj_func_coffs"])
-
         # Минимизация ЦФ в ПЗ соответствует максимизации ЦФ в ДЗ.
         self.func_direction_ = "max" if input_data["func_direction"] == "min" else "min"
-
         # Найденное решение задачи (вектор значений переменных и значение целевой функции).
         self.solution: Solution | None = None
 
@@ -74,16 +70,15 @@ class DualProblem(SimplexProblem):
         )
 
     def __str__(self):
-        """Вывод условия двойственной задачи"""
-
+        """Вывод условия двойственной задачи ЛП."""
         multiplier: int = -1 if self.func_direction_ == "max" else 1
         return "\n".join(
             [
-                f"F = cx -> {self.func_direction_},",
-                "Ax >= b,",
+                f"F = b^T⋅x -> {self.func_direction_},",
+                "A^T⋅x >= c^T,",
                 "x1, x2, ..., xn >= 0",
-                f"C = {multiplier * self.obj_func_coffs_}",
-                f"A =\n{self.constraint_system_lhs_},",
-                f"b^T = {self.constraint_system_rhs_}.",
+                f"b^T = {multiplier * self.obj_func_coffs_}",
+                f"A^T =\n{self.constraint_system_lhs_},",
+                f"c^T = {self.constraint_system_rhs_}.",
             ]
         )
