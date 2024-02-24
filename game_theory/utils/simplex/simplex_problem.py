@@ -119,7 +119,7 @@ class SimplexProblem:
             table_rows_count: int = self.simplex_table_.main_table_.shape[0]
             self.simplex_table_.main_table_[table_rows_count - 1][0] *= -1
 
-        self.solution = self.__collect_solution()
+        self.solution: Solution = self.__collect_solution()
         _logger.info("Оптимальное решение найдено!")
         self.__output_solution()
         return self.solution

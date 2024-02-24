@@ -6,5 +6,7 @@ from typing import Any, Callable, TypeAlias
 ValueType: TypeAlias = int | float
 # Type to annotate indexes in game matrix.
 IndexType: TypeAlias = int
+# Type to annotate labels of strategies for players.
+LabelType: TypeAlias = str
 # Type to annotate comparison operator.
 ComparisonOperator: TypeAlias = Callable[[Any, Any], bool]

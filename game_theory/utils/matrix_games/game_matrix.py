@@ -7,7 +7,7 @@ import numpy as np
 from prettytable import PrettyTable
 
 from .exceptions import MatrixGameException
-from .types import ComparisonOperator, IndexType, ValueType
+from .types import ComparisonOperator, IndexType, LabelType, ValueType
 
 _logger = logging.getLogger(__name__)
 
@@ -18,16 +18,16 @@ class GameMatrix:
     def __init__(
         self,
         matrix: np.array,
-        player_a_strategy_labels: list[str] | None = None,
-        player_b_strategy_labels: list[str] | None = None,
+        player_a_strategy_labels: list[LabelType] | None = None,
+        player_b_strategy_labels: list[LabelType] | None = None,
     ):
         self.matrix: np.array = matrix
         self.player_a_strategy_labels = player_a_strategy_labels
         self.player_b_strategy_labels = player_b_strategy_labels
         if player_a_strategy_labels is None:
-            self.player_a_strategy_labels: list[str] = [f"a{i + 1}" for i in range(matrix.shape[0])]
+            self.player_a_strategy_labels: list[LabelType] = [f"a{i + 1}" for i in range(matrix.shape[0])]
         if player_b_strategy_labels is None:
-            self.player_b_strategy_labels: list[str] = [f"b{i + 1}" for i in range(matrix.shape[1])]
+            self.player_b_strategy_labels: list[LabelType] = [f"b{i + 1}" for i in range(matrix.shape[1])]
 
     def __str__(self):
         strategy_table = PrettyTable(
@@ -52,6 +52,7 @@ class GameMatrix:
         return str(self)
 
     def __eq__(self, other: "GameMatrix"):
+        """Переопределение оператора `==` для экземпляров текущего класса."""
         return all(
             (
                 (self.matrix == other.matrix).all(),
@@ -84,7 +85,7 @@ class GameMatrix:
 
     def normalize_matrix(self) -> None:
         """Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place."""
-        min_element = np.min(self.matrix)
+        min_element: ValueType = np.min(self.matrix)
         if min_element < 0:
             self.matrix += -min_element
 
@@ -178,12 +179,12 @@ class GameMatrix:
             case 0:
                 # `>=` для строк; стратегии игрока A по строкам.
                 comparison_op: ComparisonOperator = operator.ge
-                player_strategy_labels: list[str] = self.player_a_strategy_labels
+                player_strategy_labels: list[LabelType] = self.player_a_strategy_labels
                 game_matrix: np.array = self.matrix
             case 1:
                 # `<=` для столбцов; стратегии игрока B по столбцам.
                 comparison_op: ComparisonOperator = operator.le
-                player_strategy_labels: list[str] = self.player_b_strategy_labels
+                player_strategy_labels: list[LabelType] = self.player_b_strategy_labels
                 game_matrix: np.array = self.matrix.T
             case _:
                 exc_msg = f"Invalid parameter `axis`: {axis}. Must be 0 or 1."
@@ -218,12 +219,12 @@ class GameMatrix:
             case 0:
                 # `np.argmax` для выбора лучших стратегий игрока A.
                 arg_extremum = np.argmax
-                player_strategy_labels: list[str] = self.player_a_strategy_labels
+                player_strategy_labels: list[LabelType] = self.player_a_strategy_labels
                 game_matrix: np.array = self.matrix.T
             case 1:
                 # `np.argmax` для выбора лучших стратегий игрока B.
                 arg_extremum = np.argmin
-                player_strategy_labels: list[str] = self.player_b_strategy_labels
+                player_strategy_labels: list[LabelType] = self.player_b_strategy_labels
                 game_matrix: np.array = self.matrix
             case _:
                 exc_msg = f"Invalid parameter `axis`: {axis}. Must be 0 or 1."
