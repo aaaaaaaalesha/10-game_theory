@@ -83,11 +83,18 @@ class GameMatrix:
         upper_price_index: IndexType = np.argmin(self.max_looses_player_b, axis=0)
         return upper_price_index, self.max_looses_player_b[upper_price_index]
 
-    def normalize_matrix(self) -> None:
-        """Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place."""
+    def normalize_matrix(self) -> ValueType:
+        """
+        Приводит исходную матрицу к нормализованной (с неотрицательными коэффициентами) in-place.
+        :returns: Нормировочное слагаемое нормализации.
+        """
         min_element: ValueType = np.min(self.matrix)
         if min_element < 0:
             self.matrix += -min_element
+            msg = f"Прибавили ко всем элементам исходной матрицы {-min_element}"
+            _logger.info(msg)
+
+        return -min_element
 
     def drop_duplicate_strategies(self) -> None:
         """Удаляет дублирующиеся стратегии игроков A и B in-place."""
