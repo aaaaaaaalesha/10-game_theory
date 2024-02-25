@@ -18,7 +18,7 @@ python = "^3.10"
 # The fundamental package for scientific computing with Python
 numpy = "^1.26.4"
 # Fast, powerful and easy to use data analysis tool.
-pandas = "^2.2.0"
+pandas = "^2.2.1"
 # Easily displaying tabular data in ASCII table format.
 prettytable = "^3.9.0"
 # Fundamental algorithms for scientific computing in Python.
@@ -33,7 +33,8 @@ notebook = "^7.0.7"
 pre-commit = "^3.6.1"
 # Fast Python linter and code formatter.
 ruff = "^0.2.1"
-
+# To convert Jupyter Notebooks to PDF/TEX.
+nbconvert = "^7.16.1"
 
 [tool.ruff]
 # The directories to consider when resolving first- vs. third-party imports.
