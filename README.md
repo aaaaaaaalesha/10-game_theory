@@ -17,7 +17,7 @@
 
 ## Quick Start
 
-1. Installing Poetry to manage dependencies.
+1. Installing **Poetry** to manage dependencies.
 
 ```bash
 # Install Poetry.
@@ -39,7 +39,7 @@ export PATH="$HOME/.local/bin:$PATH"
 [System.Environment]::SetEnvironmentVariable('path', $env:USERPROFILE + "\AppData\Roaming\Python\Scripts;" + [System.Environment]::GetEnvironmentVariable('path', "User"),"User")
 ```
 
-2. All dependencies have already locked in poetry.lock, you just need to install it.
+2. All dependencies have already locked in `poetry.lock`, you just need to install it.
 
 - If you need the complete environment with dev-tools.
 
