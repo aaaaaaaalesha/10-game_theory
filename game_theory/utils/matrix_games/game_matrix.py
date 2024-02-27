@@ -131,15 +131,15 @@ class GameMatrix:
         """
         match method:
             case "dominant_absorption":
-                useless_finder = self.__find_dominated_vectors
+                useless_finder_method = self.__find_dominated_vectors
             case "nbr_drop":
-                useless_finder = self.__find_nbr_vectors
+                useless_finder_method = self.__find_nbr_vectors
             case _:
                 exc_msg = f"Invalid mode of reducing matrix: {method}"
                 raise MatrixGameException(exc_msg)
 
         # Поиск и удаление доминируемых строк.
-        useless_rows: set[IndexType] = useless_finder(axis=0)
+        useless_rows: set[IndexType] = useless_finder_method(axis=0)
         if useless_rows:
             # Обновление индексов строк для удаления.
             useless_rows: list[IndexType] = sorted(useless_rows)
@@ -156,7 +156,7 @@ class GameMatrix:
             )._base_game_reduce(method=method)
 
         # Поиск и удаление доминируемых столбцов.
-        useless_columns: set[IndexType] = useless_finder(axis=1)
+        useless_columns: set[IndexType] = useless_finder_method(axis=1)
         if useless_columns:
             # Обновление индексов столбцов для удаления.
             useless_columns: list[IndexType] = sorted(useless_columns)
@@ -245,4 +245,5 @@ class GameMatrix:
         if useless_strategies:
             msg = f"Удаление NBR-стратегий {[player_strategy_labels[i] for i in useless_strategies]}"
             _logger.info(msg)
+
         return useless_strategies
