@@ -43,7 +43,7 @@ def get_resulted_mixed_strategies(
     mixed_strategies_table = PrettyTable(
         title=f"Смешанные стратегии игрока {player_name}",
         field_names=player_labels,
-        float_format=".2",
+        float_format=".3",
     )
     # Значения смешанных стратегий игрока.
     mixed_strategies_table.add_row([labels_to_probability.get(label, 0.0) for label in player_labels])
