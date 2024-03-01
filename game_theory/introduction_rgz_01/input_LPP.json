@@ -5,12 +5,12 @@
   ],
   "constraint_system_lhs": [
     [
-      0,
-      8
+      6,
+      0
     ],
     [
-      9,
-      7
+      3,
+      8
     ]
   ],
   "constraint_system_rhs": [
