@@ -7,7 +7,7 @@ import numpy as np
 from prettytable import PrettyTable
 
 from .exceptions import MatrixGameException
-from .types import ComparisonOperator, IndexType, LabelType, ValueType
+from .types import ComparisonOperator, IndexType, LabelType, SizeType, ValueType
 
 _logger = logging.getLogger(__name__)
 
@@ -60,6 +60,11 @@ class GameMatrix:
                 self.player_b_strategy_labels == other.player_b_strategy_labels,
             )
         )
+
+    @property
+    def shape(self) -> tuple[SizeType, SizeType]:
+        """Кортеж с размером матричной игры."""
+        return self.matrix.shape
 
     @property
     def min_wins_player_a(self) -> np.array:
