@@ -97,13 +97,14 @@ class BrownRobinson:
         mixed_strategies_player_b: pd.Series = (
             self.solution_table[CHOSEN_B_LABEL].value_counts().sort_index() / iterations_count
         )
-        return (tuple(mixed_strategies_player_a.values), tuple(mixed_strategies_player_b.values))
+        return tuple(mixed_strategies_player_a.values), tuple(mixed_strategies_player_b.values)
 
     @property
     def game_price_estimation(self) -> ValueType | None:
         """Оценка для цены игры на данной итерации алгоритма."""
         last_row: pd.Series = self.solution_table.iloc[-1]
-        return (last_row[MINMAX_ESTIMATION_LABEL] + last_row[MAXMIN_ESTIMATION_LABEL]) / 2
+        # В качестве оценки берём нижнюю цену игры.
+        return last_row[MAXMIN_ESTIMATION_LABEL]
 
     def solve(
         self,
