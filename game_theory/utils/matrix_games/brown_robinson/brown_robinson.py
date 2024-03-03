@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from game_theory.utils.matrix_games.exceptions import MatrixGameException
 from game_theory.utils.matrix_games.game_matrix import GameMatrix
 from game_theory.utils.matrix_games.types import IndexType, LabelType, ValueType
 
@@ -13,9 +14,9 @@ from .labels import (
     ACCURACY_LABEL,
     CHOSEN_A_LABEL,
     CHOSEN_B_LABEL,
-    HIGHEST_ESTIMATION_LABEL,
     ITERATION_LABEL,
-    LOWEST_ESTIMATION_LABEL,
+    MAXMIN_ESTIMATION_LABEL,
+    MINMAX_ESTIMATION_LABEL,
 )
 
 _logger = logging.getLogger(__name__)
@@ -36,8 +37,8 @@ class BrownRobinson:
         self.player_b_accumulated_values: np.ndarray[ValueType] = self.player_b_strategy_values
 
         # Текущая усреднённая верхняя и нижняя цены игры (ВЦИ и НЦИ).
-        self.highest_price_estimation: float = max(self.player_a_strategy_values)
-        self.lowest_price_estimation: float = min(self.player_b_strategy_values)
+        self.minmax_price_estimation: float = max(self.player_a_strategy_values)
+        self.maxmin_price_estimation: float = min(self.player_b_strategy_values)
 
         # Заполняем строку первой итерации метода.
         self.solution_table = pd.DataFrame.from_records(
@@ -48,9 +49,9 @@ class BrownRobinson:
                     CHOSEN_B_LABEL: self.player_b_strategy_labels[self.player_b_strategy_index],
                     **dict(zip(self.player_a_strategy_labels, self.player_a_accumulated_values)),
                     **dict(zip(self.player_b_strategy_labels, self.player_b_accumulated_values)),
-                    HIGHEST_ESTIMATION_LABEL: self.highest_price_estimation,
-                    LOWEST_ESTIMATION_LABEL: self.lowest_price_estimation,
-                    ACCURACY_LABEL: self.highest_price_estimation - self.lowest_price_estimation,
+                    MINMAX_ESTIMATION_LABEL: self.minmax_price_estimation,
+                    MAXMIN_ESTIMATION_LABEL: self.maxmin_price_estimation,
+                    ACCURACY_LABEL: self.minmax_price_estimation - self.maxmin_price_estimation,
                 }
             ]
         )
@@ -80,53 +81,92 @@ class BrownRobinson:
         """Значения проигрышей игрока B при текущей стратегии."""
         return self.game_matrix.matrix[self.player_a_strategy_index].copy()
 
-    def solve(self, out_path: Path | None = None) -> pd.DataFrame:
-        if self.is_solved:
-            return self.__out_result(out_path)
+    @property
+    def mixed_strategies(self) -> tuple[tuple[float, ...] | None, tuple[float, ...] | None]:
+        """
+        Возвращает кортеж смешанных стратегий игроков, если решение было найдено и
+        (None, None), если задача ещё не была решена.
+        """
+        if not self.is_solved:
+            return None, None
 
-        prev_row: pd.Series = self.solution_table.iloc[-1]
-        while prev_row[ACCURACY_LABEL] > self.accuracy:
-            prev_row: pd.Series = self.__perform_iteration(prev_row)
+        iterations_count: int = len(self.solution_table)
+        mixed_strategies_player_a: pd.Series = (
+            self.solution_table[CHOSEN_A_LABEL].value_counts().sort_index() / iterations_count
+        )
+        mixed_strategies_player_b: pd.Series = (
+            self.solution_table[CHOSEN_B_LABEL].value_counts().sort_index() / iterations_count
+        )
+        return (tuple(mixed_strategies_player_a.values), tuple(mixed_strategies_player_b.values))
+
+    @property
+    def game_price_estimation(self) -> ValueType | None:
+        """Оценка для цены игры на данной итерации алгоритма."""
+        last_row: pd.Series = self.solution_table.iloc[-1]
+        return (last_row[MINMAX_ESTIMATION_LABEL] + last_row[MAXMIN_ESTIMATION_LABEL]) / 2
+
+    def solve(
+        self,
+        mode="random",
+        out: Path | None = None,
+    ) -> pd.DataFrame:
+        """
+        Производит решение матричной игры за обоих игроков методом Брауна-Робинсон.
+        :param out: Опциональный путь до файла для записи таблицы итераций алгоритма.
+        :param str mode: Регламентирует, как выбирать стратегии в случае коллизий.
+            - "random" (default) - использует случайную из лучших стратегий;
+            - "previous" - использует стратегию с прошлой итерации.
+        :return:
+        """
+        if self.is_solved:
+            return self.__write_result(out)
+
+        # Берём предыдущую строку итерации алгоритма.
+        last_row: pd.Series = self.solution_table.iloc[-1]
+        # Проделываем итерации алгоритма, пока не достигнем величины, меньшей ε.
+        while last_row[ACCURACY_LABEL] > self.accuracy:
+            # Производим очередную итерацию алгоритма.
+            last_row: pd.Series = self.__perform_iteration(last_row, mode=mode)
+            # Добавляем очередную строку в таблицу.
+            self.solution_table.loc[len(self.solution_table)] = last_row
 
         self.is_solved = True
-        return self.__out_result(out_path)
+        return self.__write_result(out)
 
-    def __out_result(self, out_path: Path | None = None) -> pd.DataFrame:
+    def __write_result(self, out_path: Path | None = None) -> pd.DataFrame:
+        # Округляем до 3 значащих цифр после запятой.
+        self.solution_table = self.solution_table.round(3)
         # Экспортируем результат в CSV-таблицу, если передан путь.
         if isinstance(out_path, Path):
             self.solution_table.to_csv(out_path, index=False)
 
         return self.solution_table
 
-    def __perform_iteration(self, row: pd.Series) -> pd.Series:
-        # Находим лучшие стратегии игроков A и B.
-        max_price_indexes: np.ndarray[IndexType] = np.flatnonzero(
-            self.player_a_accumulated_values == np.max(self.player_a_accumulated_values)
-        )
-        min_price_indexes: np.ndarray[IndexType] = np.flatnonzero(
-            self.player_b_accumulated_values == np.min(self.player_b_accumulated_values)
-        )
-        # Если их несколько, рандомим между ними.
-        self.player_a_strategy_index = (
-            random.choice(max_price_indexes) if len(max_price_indexes) > 1 else max_price_indexes[0]
-        )
-        self.player_b_strategy_index = (
-            random.choice(min_price_indexes) if len(min_price_indexes) > 1 else min_price_indexes[0]
-        )
-
+    def __perform_iteration(self, previous_row: pd.Series, mode="random") -> pd.Series:
+        """
+        Производит очередную итерацию алгоритма Брауна-Робинсон.
+        :param pd.Series previous_row: Строка предыдущей итерации алгоритма.
+        :param str mode: Регламентирует, как выбирать стратегии в случае коллизий.
+            - "random" (default) - использует случайную из лучших стратегий;
+            - "previous" - использует стратегию с прошлой итерации.
+        :return: Вычисленное значение ошибки (точности) ε на данной итерации.
+        """
+        # Выбираем лучшие стратегии игроков в новой итерации.
+        (self.player_a_strategy_index, self.player_b_strategy_index) = self.__choose_strategies(mode=mode)
         # Добавляем выбранные стратегии к накопленным ранее.
         self.player_a_accumulated_values += self.player_a_strategy_values
         self.player_b_accumulated_values += self.player_b_strategy_values
 
-        iteration_k: int = row[ITERATION_LABEL] + 1
+        iteration_k: int = previous_row[ITERATION_LABEL] + 1
         # Храним минимальную верхнюю и максимальную нижнюю цены игры
         # (но в строке итерации выводим именно текущие оценки для ЦИ).
         high_price_estimate: float = max(self.player_a_accumulated_values) / iteration_k
+        self.minmax_price_estimation = min(self.minmax_price_estimation, high_price_estimate)
         low_price_estimate: float = min(self.player_b_accumulated_values) / iteration_k
-        self.highest_price_estimation = min(row[HIGHEST_ESTIMATION_LABEL], high_price_estimate)
-        self.lowest_price_estimation = max(row[LOWEST_ESTIMATION_LABEL], low_price_estimate)
-        # Наполняем строку итерации.
-        new_row = pd.Series(
+        self.maxmin_price_estimation = max(self.maxmin_price_estimation, low_price_estimate)
+
+        # Добавляем строку новой итерации к таблице.
+        return pd.Series(
             [
                 iteration_k,
                 self.player_a_strategy_labels[self.player_a_strategy_index],
@@ -135,10 +175,44 @@ class BrownRobinson:
                 *self.player_b_accumulated_values,
                 high_price_estimate,
                 low_price_estimate,
-                self.highest_price_estimation - self.lowest_price_estimation,
+                self.minmax_price_estimation - self.maxmin_price_estimation,
             ],
-            index=row.index,
+            index=previous_row.index,
         )
-        # Добавляем строку к таблице и возвращаем её.
-        self.solution_table.loc[len(self.solution_table)] = new_row
-        return new_row
+
+    def __choose_strategies(self, mode="random") -> tuple[IndexType, IndexType]:
+        """
+        Выбирает индексы лучших стратегий игроков для следующей итерации алгоритма.
+        :param str mode: Регламентирует, как выбирать стратегии в случае коллизий.
+          - "random" (default) - использует случайную из лучших стратегий;
+          - "previous" - использует стратегию с прошлой итерации.
+        :return: Кортеж из двух индексов лучших стратегий для игроков A и B соответственно.
+        """
+        # Находим лучшие стратегии игрока A.
+        max_strategy_indexes: np.ndarray[IndexType] = np.flatnonzero(
+            self.player_a_accumulated_values == np.max(self.player_a_accumulated_values)
+        )
+        # Находим лучшие стратегии игрока B.
+        min_strategy_indexes: np.ndarray[IndexType] = np.flatnonzero(
+            self.player_b_accumulated_values == np.min(self.player_b_accumulated_values)
+        )
+
+        chosen_strategy_indexes = [self.player_a_strategy_index, self.player_b_strategy_index]
+        for i, best_strategy_indexes in enumerate((max_strategy_indexes, min_strategy_indexes)):
+            if len(best_strategy_indexes) == 1:
+                chosen_strategy_indexes[i] = best_strategy_indexes[0]
+                continue
+
+            # Если происходит коллизия лучших стратегий, производим отбор
+            match mode:
+                case "previous":
+                    # Ничего не делаем, оставляем предыдущую стратегию.
+                    continue
+                case "random":
+                    # Если их несколько, рандомим между ними.
+                    chosen_strategy_indexes[i] = random.choice(best_strategy_indexes)
+                case _:
+                    err_msg = f"Invalid mode {mode}"
+                    raise MatrixGameException(err_msg)
+
+        return tuple(chosen_strategy_indexes)
