@@ -103,8 +103,8 @@ class BrownRobinson:
     def game_price_estimation(self) -> ValueType | None:
         """Оценка для цены игры на данной итерации алгоритма."""
         last_row: pd.Series = self.solution_table.iloc[-1]
-        # В качестве оценки берём нижнюю цену игры.
-        return last_row[MAXMIN_ESTIMATION_LABEL]
+        # В качестве оценки берём верхнюю цену игры.
+        return last_row[MINMAX_ESTIMATION_LABEL]
 
     def solve(
         self,
