@@ -91,20 +91,20 @@ class BrownRobinson:
             return None, None
 
         iterations_count: int = len(self.solution_table)
-        mixed_strategies_player_a: pd.Series = (
-            self.solution_table[CHOSEN_A_LABEL].value_counts().sort_index() / iterations_count
-        )
-        mixed_strategies_player_b: pd.Series = (
-            self.solution_table[CHOSEN_B_LABEL].value_counts().sort_index() / iterations_count
-        )
-        return tuple(mixed_strategies_player_a.values), tuple(mixed_strategies_player_b.values)
+        mixed_strategies: list = [None, None]
+        for i, chosen_label in enumerate((CHOSEN_A_LABEL, CHOSEN_B_LABEL)):
+            mixed_strategy: np.ndarray = (
+                self.solution_table[chosen_label].value_counts().sort_index() / iterations_count
+            ).to_numpy()
+            zero_probabilities_count: int = self.game_matrix.shape[i] - len(mixed_strategy)
+            mixed_strategies[i] = tuple(list(mixed_strategy) + [0] * zero_probabilities_count)
+
+        return tuple(mixed_strategies)
 
     @property
     def game_price_estimation(self) -> ValueType | None:
         """Оценка для цены игры на данной итерации алгоритма."""
-        last_row: pd.Series = self.solution_table.iloc[-1]
-        # В качестве оценки берём верхнюю цену игры.
-        return last_row[MINMAX_ESTIMATION_LABEL]
+        return (self.minmax_price_estimation + self.maxmin_price_estimation) / 2
 
     def solve(
         self,
@@ -135,10 +135,10 @@ class BrownRobinson:
         return self.__write_result(out)
 
     def __write_result(self, out_path: Path | None = None) -> pd.DataFrame:
-        # Округляем до 3 значащих цифр после запятой.
         self.solution_table = self.solution_table.round(3)
         # Экспортируем результат в CSV-таблицу, если передан путь.
         if isinstance(out_path, Path):
+            # Округляем до 3 значащих цифр после запятой.
             self.solution_table.to_csv(out_path, index=False)
 
         return self.solution_table
@@ -185,8 +185,8 @@ class BrownRobinson:
         """
         Выбирает индексы лучших стратегий игроков для следующей итерации алгоритма.
         :param str mode: Регламентирует, как выбирать стратегии в случае коллизий.
-          - "random" (default) - использует случайную из лучших стратегий;
-          - "previous" - использует стратегию с прошлой итерации.
+            - "random" (default) - использует случайную из лучших стратегий;
+            - "previous" - использует стратегию с прошлой итерации.
         :return: Кортеж из двух индексов лучших стратегий для игроков A и B соответственно.
         """
         # Находим лучшие стратегии игрока A.
