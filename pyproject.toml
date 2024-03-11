@@ -95,6 +95,7 @@ ignore = [
     "PLR09", # Too many <...>
     "PLR2004", # Magic value used in comparison
     "ISC001", # Conflicts with formatter
+    "G004", # f-strings in logging
 ]
 # A list of allowed "confusable" Unicode chars to ignore
 # when enforcing RUF001, RUF002, and RUF003.
@@ -102,6 +103,7 @@ allowed-confusables = [
     "а", "А", "в", "В", "е", "Е", "к", "К",
     "н", "Н", "о", "О", "р", "Р", "с", "С",
     "т", "Т", "г", "Г", "у", "У", "х", "Х",
+    "α",
 ]
 
 [build-system]

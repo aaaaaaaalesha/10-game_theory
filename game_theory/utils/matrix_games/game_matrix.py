@@ -6,6 +6,9 @@ import operator
 import numpy as np
 from prettytable import PrettyTable
 
+from game_theory.utils.simplex.dual_problem import DualProblem
+from game_theory.utils.simplex.simplex_problem import SimplexProblem
+
 from .exceptions import MatrixGameException
 from .types import ComparisonOperator, IndexType, LabelType, SizeType, ValueType
 
@@ -128,6 +131,49 @@ class GameMatrix:
 
         reduced_matrix: GameMatrix = self._base_game_reduce(method=method)
         return reduced_matrix
+
+    def solve(self, player="A") -> tuple[ValueType, tuple[float, ...]]:
+        """
+        Решает матричную игру относительно выбранного игрока.
+        (поддерживается симплекс-метод, как вполне универсальное решение)
+        :param player: Метка первого или второго игрока:
+            - "A" (default) - метка первого игрока A;
+            - "B" - метка второго игрока B.
+        :return: Возвращает значение цены игры и вектор смешанных стратегий игрока.
+        """
+        # Проверка седловой точки.
+        i, lgp_value = self.lowest_game_price
+        j, hgp_value = self.highest_game_price
+        if lgp_value == hgp_value:
+            strategy_count, idx = (self.shape[0], i) if player == "A" else (self.shape[1], j)
+            clear_strategy = [0] * strategy_count
+            clear_strategy[idx] = 1
+            _logger.info(f"Седловая точка найдена: {lgp_value, clear_strategy}")
+            return lgp_value, tuple(clear_strategy)
+
+        match player:
+            case "A":
+                problem_cls = DualProblem
+                player_strategy_labels = self.player_a_strategy_labels
+            case "B":
+                problem_cls = SimplexProblem
+                player_strategy_labels = self.player_b_strategy_labels
+            case _:
+                exc_msg = f"Invalid player label: {player}"
+                raise MatrixGameException(exc_msg)
+
+        problem: SimplexProblem | DualProblem = problem_cls.from_constraints(
+            obj_func_coffs=[1] * self.shape[1],
+            constraint_system_lhs=self.matrix.tolist(),
+            constraint_system_rhs=[1] * self.shape[0],
+            func_direction="max",
+        )
+        var_values, target_function_value = problem.solve()
+
+        game_price_value: ValueType = 1 / target_function_value
+        mixed_strategies = [var_value * game_price_value for var_value in var_values]
+        mixed_strategies = mixed_strategies[: len(player_strategy_labels)]
+        return game_price_value, tuple(mixed_strategies)
 
     def _base_game_reduce(self, method="dominant_absorption") -> "GameMatrix":
         """

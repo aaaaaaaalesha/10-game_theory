@@ -5,6 +5,7 @@ Copyright 2020 Alexey Alexandrov
 import json
 import logging
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 
@@ -49,12 +50,44 @@ class SimplexProblem:
         if self.func_direction_ == "max":
             self.obj_func_coffs_ *= -1
 
+        _logger.info(str(self))
+
         # Инициализация симплекс-таблицы.
         self.simplex_table_ = SimplexTable(
             obj_func_coffs=self.obj_func_coffs_,
             constraint_system_lhs=self.constraint_system_lhs_,
             constraint_system_rhs=self.constraint_system_rhs_,
         )
+
+    @classmethod
+    def from_constraints(
+        cls,
+        obj_func_coffs: list,
+        constraint_system_lhs: list,
+        constraint_system_rhs: list,
+        func_direction="max",
+    ) -> "SimplexProblem":
+        """
+        Альтернативный конструктор, использующий входные значения напрямую.
+        :param obj_func_coffs: Вектор-строка с - коэффициенты ЦФ.
+        :param constraint_system_lhs: Матрица ограничений А.
+        :param constraint_system_rhs: Вектор-столбец ограничений b.
+        :param func_direction: Направление задачи ("min" (default) или "max").
+        :return: Экземпляр класса SimplexProblem.
+        """
+        with NamedTemporaryFile(mode="w") as input_file:
+            input_path = Path(input_file.name)
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "obj_func_coffs": obj_func_coffs,
+                        "constraint_system_lhs": constraint_system_lhs,
+                        "constraint_system_rhs": constraint_system_rhs,
+                        "func_direction": func_direction,
+                    }
+                )
+            )
+            return cls(input_path)
 
     def __str__(self):
         """Вывод условия прямой задачи ЛП."""
