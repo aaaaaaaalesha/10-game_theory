@@ -27,13 +27,14 @@ class Monotonic:
     def solve(self):
         # Решение за игрока A.
         _logger.info("Решение игры относительно игрока A")
-        (
-            price_a,
-            strategy_a,
-        ) = self._base_solve(self.game.matrix.copy())
+        price_a, strategy_a = self._base_solve(np.float16(self.game.matrix))
+        iterations_a_count = self.iteration_number
         # Решения за игрока B.
         _logger.info("Решение игры относительно игрока B")
-        price_b, strategy_b = self._base_solve(self.game.matrix.T.copy())
+        price_b, strategy_b = self._base_solve(np.float16(self.game.matrix.T))
+        iterations_b_count = self.iteration_number
+
+        _logger.info(f"Итераций игроков сделано {(iterations_a_count, iterations_b_count)}")
         return (price_a, strategy_a), (price_b, strategy_b)
 
     def _base_solve(self, matrix: np.ndarray[ValueType]):
@@ -49,7 +50,7 @@ class Monotonic:
         # Текущая цена игры.
         self.price_v = np.min(self.scores_c)
         # Вектор-индикатор, который показывает принадлежность к множеству.
-        self.indicator_mask_j: np.ndarray[bool] = self.scores_c == self.price_v
+        self.indicator_mask_j: np.ndarray[bool] = np.isclose(self.scores_c, self.price_v)
         self.__log_calculated_parameters()
 
         alpha_values = np.array((np.inf, np.inf))
@@ -62,17 +63,19 @@ class Monotonic:
                 self.strategy_x = (1 - alpha) * self.strategy_x + alpha * optimal_strategy_x_
                 self.scores_c = (1 - alpha) * self.scores_c + alpha * optimal_scores_c_
                 self.price_v = np.min(self.scores_c)
-                self.indicator_mask_j = np.isclose(self.scores_c, self.price_v, atol=0.0001)
+                self.indicator_mask_j = np.isclose(self.scores_c, self.price_v)
+                if np.all(self.indicator_mask_j):
+                    self.indicator_mask_j[-1] = False
                 self.__log_calculated_parameters()
 
-        _logger.info(f"Получили α_{self.iteration_number} = {alpha}, поэтому останавливаем алгоритм.")
+        _logger.info(f"Получили α_{self.iteration_number} = {alpha:.0f}, поэтому останавливаем алгоритм.")
 
         return self.price_v, self.strategy_x.copy()
 
     def perform_iteration(self, matrix: np.ndarray[ValueType], accuracy=3) -> tuple[ndarray, ndarray, ndarray]:
         self.iteration_number += 1
         i = self.iteration_number
-        _logger.info(f"Итерация {self.iteration_number}:")
+        _logger.info(f"\nИтерация {self.iteration_number}:")
         # Выбираем только столбцы, удовлетворяющие нашему индикатору.
         sub_game_matrix_a = GameMatrix(matrix[:, self.indicator_mask_j].copy())
         _logger.info(f"Рассмотрим подыгру Г^{i}: " f"\n{np.round(sub_game_matrix_a.matrix, accuracy)}")
