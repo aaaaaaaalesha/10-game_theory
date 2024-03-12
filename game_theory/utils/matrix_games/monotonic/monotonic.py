@@ -64,11 +64,15 @@ class Monotonic:
                 self.scores_c = (1 - alpha) * self.scores_c + alpha * optimal_scores_c_
                 self.price_v = np.min(self.scores_c)
                 self.indicator_mask_j = np.isclose(self.scores_c, self.price_v)
-                if np.all(self.indicator_mask_j):
-                    self.indicator_mask_j[-1] = False
                 self.__log_calculated_parameters()
+                # Если в J_i попали все столбцы, завершаем алгоритм.
+                if np.all(self.indicator_mask_j):
+                    _logger.info(
+                        f"Так как в J^{self.iteration_number} попали все номера столбцов, " f"останавливаем алгоритм"
+                    )
+                    return self.price_v, self.strategy_x.copy()
 
-        _logger.info(f"Получили α_{self.iteration_number} = {alpha:.0f}, поэтому останавливаем алгоритм.")
+        _logger.info(f"Получили α_{self.iteration_number} = {alpha:.0f}, поэтому останавливаем алгоритм")
 
         return self.price_v, self.strategy_x.copy()
 
