@@ -28,6 +28,7 @@ matplotlib = "^3.8.2"
 # Web-based notebook environment for interactive computing.
 notebook = "^7.0.7"
 annotated-types = "^0.6.0"
+sympy = "^1.12"
 
 [tool.poetry.group.dev.dependencies]
 # Framework for managing pre-commit hooks.
