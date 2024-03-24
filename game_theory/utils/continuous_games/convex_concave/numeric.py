@@ -19,13 +19,15 @@ class NumericMethod:
     Численный метод решения выпукло-вогнутых игр с непрерывным ядром.
     """
 
-    def __init__(self, kernel_func: function.Lambda, accuracy: float = 0.01, deltas_count: SizeType = 5):
+    def __init__(self, kernel_func: function.Lambda, accuracy: float = 0.1, deltas_count: SizeType = 3):
         # Функция ядра непрерывной выпукло-вогнутой игры.
         self.kernel_func: function.Lambda = kernel_func
         # Точность численного метода.
         self.accuracy: float = accuracy
         # Разности между соседними вычисленными значениями цены игры на итерациях.
-        self.__deltas: deque[float] = deque(maxlen=deltas_count)
+        max_len: SizeType = deltas_count
+        self.__deltas: deque[float] = deque(maxlen=max_len)
+        self.__estimates: deque[tuple[float, float, ValueType]] = deque(maxlen=max_len)
 
         # Проверяем, что игра является выпукло-вогнутой.
         x, y = sympy.symbols(("x", "y"))
@@ -45,7 +47,7 @@ class NumericMethod:
         n = 2
 
         while len(self.__deltas) == 0 or sum(self.__deltas) > self.accuracy:
-            _logger.info(f"N = {n}, (шаг сетки: {1 / n:.3f})")
+            _logger.info(f"N = {n} (шаг: {1 / n:.3f})")
             grid_game_matrix = GameMatrix(self._generate_grid_approximation_matrix(n))
             _logger.info(grid_game_matrix)
 
@@ -60,24 +62,28 @@ class NumericMethod:
                 br_method = BrownRobinson(grid_game_matrix, accuracy=self.accuracy)
                 br_method.solve()
                 game_price_estimate = br_method.game_price_estimation
+                # _logger.info(f"Оценка для цены игры: {game_price_estimate}")
                 x_mixed_strategies, y_mixed_strategies = br_method.mixed_strategies
-                x_estimate, y_estimate = (
-                    np.argmax(x_mixed_strategies) / n,
-                    np.argmax(y_mixed_strategies) / n,
-                )
+                # _logger.info(f"Смешанные стратегии:\n X = {x_mixed_strategies}\n Y = {y_mixed_strategies}")
+                x_estimate, y_estimate = (np.argmax(x_mixed_strategies) / n, np.argmax(y_mixed_strategies) / n)
                 _logger.info("Седловой точки нет. Решение методом Брауна-Робинсон:")
 
             _logger.info(f"x = {x_estimate:.3f}; y = {y_estimate:.3f}; H = {game_price_estimate:.3f}\n")
-            # На первой итерации просто сохраняем полученное значение.
-            if prev_game_price_estimate is None:
-                prev_game_price_estimate = game_price_estimate
-            else:
+            if prev_game_price_estimate is not None:
                 # Добавляем разность между оценками цен игры на текущей и предыдущей итерации в deque.
-                self.__push_delta(np.abs(game_price_estimate - prev_game_price_estimate))
-                prev_game_price_estimate = game_price_estimate
+                self.__push_estimates(
+                    delta=np.abs(game_price_estimate - prev_game_price_estimate),
+                    x_est=x_estimate,
+                    y_est=y_estimate,
+                    game_price_est=game_price_estimate,
+                )
 
+            prev_game_price_estimate = game_price_estimate
             n += 1
 
+        x_estimate, y_estimate, game_price_estimate = (
+            np.mean([est_tuple[i] for est_tuple in self.__estimates]) for i in range(3)
+        )
         _logger.info(
             "Таким образом численно найдено решение задачи:\n"
             f"x ≈ {x_estimate:.3f}; y ≈ {y_estimate:.3f}; H ≈ {game_price_estimate:.3f}"
@@ -103,9 +109,11 @@ class NumericMethod:
             ]
         )
 
-    def __push_delta(self, delta: float) -> None:
-        """Добавляем контейнер разностей"""
+    def __push_estimates(self, delta: float, x_est: float, y_est: float, game_price_est: ValueType) -> None:
+        """Добавляем оценки результатов и разностей прироста цены игры в deque-контейнеры."""
         if len(self.__deltas) == self.__deltas.maxlen:
             self.__deltas.popleft()
+            self.__estimates.popleft()
 
         self.__deltas.append(delta)
+        self.__estimates.append((x_est, y_est, game_price_est))
