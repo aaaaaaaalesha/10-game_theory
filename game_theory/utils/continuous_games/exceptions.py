@@ -1,0 +1,2 @@
+class ContinuousGameException(Exception):
+    pass

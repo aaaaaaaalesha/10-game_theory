@@ -106,18 +106,14 @@ class BrownRobinson:
         """Оценка для цены игры на данной итерации алгоритма."""
         return (self.minmax_price_estimation + self.maxmin_price_estimation) / 2
 
-    def solve(
-        self,
-        mode="random",
-        out: Path | None = None,
-    ) -> pd.DataFrame:
+    def solve(self, mode="random", out: Path | None = None) -> pd.DataFrame:
         """
         Производит решение матричной игры за обоих игроков методом Брауна-Робинсон.
         :param out: Опциональный путь до файла для записи таблицы итераций алгоритма.
         :param str mode: Регламентирует, как выбирать стратегии в случае коллизий.
             - "random" (default) - использует случайную из лучших стратегий;
             - "previous" - использует стратегию с прошлой итерации.
-        :return:
+        :return: DataFrame с таблицей численного метода.
         """
         if self.is_solved:
             return self.__write_result(out)

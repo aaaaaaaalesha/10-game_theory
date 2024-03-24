@@ -36,6 +36,7 @@ class GameMatrix:
         strategy_table = PrettyTable(
             title="Таблица стратегий (игрока А)",
             field_names=("Стратегии", *self.player_b_strategy_labels, "MIN выигрыш A"),
+            float_format=".3",
         )
         # Добавляем стратегии игрока A со столбцом MIN выигрыша A.
         strategy_table.add_rows(
@@ -99,8 +100,7 @@ class GameMatrix:
         min_element: ValueType = np.min(self.matrix)
         if min_element < 0:
             self.matrix += -min_element
-            msg = f"Прибавили ко всем элементам исходной матрицы {-min_element}"
-            _logger.info(msg)
+            _logger.info(f"Прибавили ко всем элементам исходной матрицы {-min_element}")
 
         return -min_element
 
@@ -151,6 +151,7 @@ class GameMatrix:
             _logger.info(f"Седловая точка найдена: {lgp_value, clear_strategy}")
             return lgp_value, tuple(clear_strategy)
 
+        _logger.info("Седловой точки нет.")
         match player:
             case "A":
                 problem_cls = DualProblem
