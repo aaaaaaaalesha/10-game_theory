@@ -42,10 +42,8 @@ class NumericMethod:
             raise ContinuousGameException(err_msg)
 
     def solve(self) -> tuple[float, float, ValueType]:
-        prev_game_price_estimate, game_price_estimate = None, None
-        x_estimate, y_estimate = None, None
         n = 2
-
+        prev_game_price_estimate, game_price_estimate = None, None
         while len(self.__deltas) == 0 or sum(self.__deltas) > self.accuracy:
             _logger.info(f"N = {n} (шаг: {1 / n:.3f})")
             grid_game_matrix = GameMatrix(self._generate_grid_approximation_matrix(n))
@@ -62,10 +60,8 @@ class NumericMethod:
                 br_method = BrownRobinson(grid_game_matrix, accuracy=self.accuracy)
                 br_method.solve()
                 game_price_estimate = br_method.game_price_estimation
-                # _logger.info(f"Оценка для цены игры: {game_price_estimate}")
                 x_mixed_strategies, y_mixed_strategies = br_method.mixed_strategies
-                # _logger.info(f"Смешанные стратегии:\n X = {x_mixed_strategies}\n Y = {y_mixed_strategies}")
-                x_estimate, y_estimate = (np.argmax(x_mixed_strategies) / n, np.argmax(y_mixed_strategies) / n)
+                x_estimate, y_estimate = np.argmax(x_mixed_strategies) / n, np.argmax(y_mixed_strategies) / n
                 _logger.info("Седловой точки нет. Решение методом Брауна-Робинсон:")
 
             _logger.info(f"x = {x_estimate:.3f}; y = {y_estimate:.3f}; H = {game_price_estimate:.3f}\n")
