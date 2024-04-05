@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 from prettytable import PrettyTable
 
+from .exceptions import BimatrixGameException
 from .types import IndexType, SizeType
 
 _logger = logging.getLogger(__name__)
@@ -82,6 +83,22 @@ class BimatrixGame:
             for j in range(self.bimatrix.shape[1])
             if self.__is_nash_optimal(i, j)
         }
+
+    def do_something(self):
+        # Матрицы игры, состоящие соответственно из первых и вторых элементов кортежей биматрицы.
+        a_matrix = np.array([[bivalue[0] for bivalue in row] for row in self.bimatrix])
+        b_matrix = np.array([[bivalue[1] for bivalue in row] for row in self.bimatrix])
+
+        # Проверка невырожденности матриц.
+        if np.linalg.det(a_matrix) == 0:
+            err_msg = "Матрица А - вырожденная. Теорема о свойствах оптимальных решений неприменима"
+            raise BimatrixGameException(err_msg)
+
+        if np.linalg.det(b_matrix) == 0:
+            err_msg = "Матрица B - вырожденная. Теорема о свойствах оптимальных решений неприменима"
+            raise BimatrixGameException(err_msg)
+
+        # x =
 
     def __is_pareto_optimal(self, first_index: IndexType, second_index: IndexType) -> bool:
         """Проверяет, является ли ситуация с данными индексами равновесной по Нэшу."""
