@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import numpy as np
 from prettytable import PrettyTable
@@ -9,6 +10,8 @@ _logger = logging.getLogger(__name__)
 
 
 class BimatrixGame:
+    ROUND_DIGITS: int = 3
+
     def __init__(self, bimatrix: np.ndarray, title="Биматричная игра"):
         self.bimatrix = bimatrix
         self.__title = title
@@ -24,31 +27,37 @@ class BimatrixGame:
         )
 
     def __str__(self):
-        digits = 3
         table = PrettyTable(
             title=self.__title,
             header=False,
-            float_format=f".{digits}",
+            float_format=f".{self.ROUND_DIGITS}",
         )
-
-        pareto_indices = self.pareto_indices
-        nash_indices = self.nash_indices
+        # Множества ситуаций, оптимальных по Парето и равновесных по Нэшу.
+        pareto_indices: set = self.pareto_indices
+        nash_indices: set = self.nash_indices
         for i, row in enumerate(self.bimatrix):
             formatted_row = []
             for j, bivalue in enumerate(row):
-                formatted_value = (round(bivalue[0], digits), round(bivalue[1], digits))
+                formatted_value = (
+                    round(bivalue[0], self.ROUND_DIGITS),
+                    round(bivalue[1], self.ROUND_DIGITS),
+                )
                 if (i, j) in pareto_indices:
-                    # Полужирное выделения для Парето.
-                    formatted_value = "\033[1m" + str(formatted_value) + "\033[0m"
+                    # Выделение полужирным курсивом для Парето.
+                    formatted_value = self.__pareto_highlight(formatted_value)
                 if (i, j) in nash_indices:
-                    # Подчёркивание для Нэша.
-                    formatted_value = "\033[4m" + str(formatted_value) + "\033[0m"
+                    # Выделение подчёркиванием для Нэша.
+                    formatted_value = self.__nash_highlight(formatted_value)
                 formatted_row.append(formatted_value)
             table.add_row(formatted_row)
 
         return (
-            f"\033[1mЖирным\033[0m выделены ситуации, оптимальные по Парето\n"
-            f"\033[4mПодчеркнутым\033[0m - ситуации, равновесные по Нэшу\n{table}"
+            f"{self.__pareto_highlight('Жирным курсивом')} выделены ситуации, оптимальные по Парето.\n"
+            f"{self.__nash_highlight('Подчеркнутым')} - ситуации, равновесные по Нэшу.\n{table}\n\n"
+            f"Равновесие Нэша: "
+            f"{[tuple(self.bimatrix[i, j].astype(np.float16)) for i, j in nash_indices] if nash_indices else '--'}\n"
+            f"Оптимальность Парето: "
+            f"{[tuple(self.bimatrix[i, j].astype(np.float16)) for i, j in pareto_indices] if pareto_indices else '--'}"
         )
 
     def __repr__(self):
@@ -97,3 +106,19 @@ class BimatrixGame:
             return False
 
         return all(self.bimatrix[first_index][j][1] <= second for j in range(n))
+
+    @staticmethod
+    def __pareto_highlight(value: Any) -> str:
+        """
+        Возвращает строковое представление переданного значения,
+        выделенного как Парето-оптимальное (жирным курсивом).
+        """
+        return f"\x1B[3m\033[1m{value}\033[0m\x1B[0m"
+
+    @staticmethod
+    def __nash_highlight(value: Any) -> str:
+        """
+        Возвращает строковое представление переданного значения,
+        выделенного как равновесное по Нэшу (подчёркнуто).
+        """
+        return f"\033[4m{value}\033[0m"
