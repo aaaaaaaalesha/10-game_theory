@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 import numpy as np
+from numpy.linalg import det, inv
 from prettytable import PrettyTable
 
 from .exceptions import BimatrixGameException
@@ -16,6 +17,7 @@ class BimatrixGame:
     def __init__(self, bimatrix: np.ndarray, title="Биматричная игра"):
         self.bimatrix = bimatrix
         self.__title = title
+        np.set_printoptions(precision=self.ROUND_DIGITS, suppress=True)
 
     @classmethod
     def from_random_values(cls, shape: tuple[SizeType, SizeType] = (10, 10), low=-100, high=100) -> "BimatrixGame":
@@ -84,21 +86,27 @@ class BimatrixGame:
             if self.__is_nash_optimal(i, j)
         }
 
-    def do_something(self):
+    def get_mixed_balanced_situation(self) -> tuple[np.ndarray, np.ndarray]:
         # Матрицы игры, состоящие соответственно из первых и вторых элементов кортежей биматрицы.
-        a_matrix = np.array([[bivalue[0] for bivalue in row] for row in self.bimatrix])
-        b_matrix = np.array([[bivalue[1] for bivalue in row] for row in self.bimatrix])
-
+        a_matrix, b_matrix = self.bimatrix[:, :, 0], self.bimatrix[:, :, 1]
         # Проверка невырожденности матриц.
-        if np.linalg.det(a_matrix) == 0:
+        if det(a_matrix) == 0:
             err_msg = "Матрица А - вырожденная. Теорема о свойствах оптимальных решений неприменима"
             raise BimatrixGameException(err_msg)
 
-        if np.linalg.det(b_matrix) == 0:
+        if det(b_matrix) == 0:
             err_msg = "Матрица B - вырожденная. Теорема о свойствах оптимальных решений неприменима"
             raise BimatrixGameException(err_msg)
 
-        # x =
+        # Вычисление вполне смешанной ситуации равновесия по теореме.
+        u = np.ones(2)
+        v1 = 1 / (u.dot(inv(a_matrix)).dot(u))
+        v2 = 1 / (u.dot(inv(b_matrix)).dot(u))
+        _logger.info(f"Равновесные выигрыши: v_1 = {v1: .3f}, v_2 = {v2: .3f}")
+        x = v2 * u.dot(inv(b_matrix))
+        y = v1 * inv(a_matrix).dot(u)
+        _logger.info(f"Вполне смешанная ситуация равновесия:\n" f"x = {x}, y = {y}")
+        return x, y
 
     def __is_pareto_optimal(self, first_index: IndexType, second_index: IndexType) -> bool:
         """Проверяет, является ли ситуация с данными индексами равновесной по Нэшу."""
