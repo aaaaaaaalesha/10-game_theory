@@ -123,17 +123,6 @@ class BimatrixGame:
             for j in range(n)
         )
 
-    """
-    for i in range(self.bimatrix.shape[0]):
-        if self.bimatrix[i][second_index][0] >= self.bimatrix[first_index][second_index][0] and i != second_index:
-            return False
-
-    for j in range(self.bimatrix.shape[1]):
-        if self.bimatrix[first_index][j][1] >= self.bimatrix[first_index][second_index][1] and j != second_index:
-            return False
-    return True
-    """
-
     def __is_nash_optimal(self, first_index: IndexType, second_index: IndexType) -> bool:
         """Проверяет, является ли ситуация с данными индексами равновесной по Нэшу."""
         m, n, _ = self.bimatrix.shape
