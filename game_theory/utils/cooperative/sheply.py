@@ -68,9 +68,9 @@ class CooperativeGame:
 
         n = self.players_count
         v = self.char_function
+        multiplier = 1 / factorial(n)
         self.shapley_vector = tuple(
-            1
-            / factorial(n)
+            multiplier
             * sum(
                 factorial(len(s) - 1) * factorial(n - len(s)) * (v(s) - v(tuple(set(s) - {i})))
                 for s in self.coalitions_generator
