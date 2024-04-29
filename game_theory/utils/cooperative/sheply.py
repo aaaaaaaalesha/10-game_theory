@@ -1,5 +1,8 @@
 from itertools import combinations
+from math import factorial
 from typing import Generator
+
+from numpy import isclose
 
 from .types import Coalition, SizeType, ValueType
 
@@ -14,8 +17,10 @@ class CooperativeGame:
             raise ValueError(err_msg)
 
         self.players_count: SizeType = players_count
+        self.total_coalition = tuple(range(1, players_count + 1))
         # Characteristic function mapping coalition to characteristic function value.
         self.__char_mapping: dict[Coalition, ValueType] = dict(zip(self.coalitions_generator, char_values))
+        self.shapley_vector = None
 
     def char_function(self, coalition: Coalition) -> ValueType:
         return self.__char_mapping[coalition]
@@ -52,3 +57,31 @@ class CooperativeGame:
                 if (second_subset := set(second_subcoalition))
             )
         )
+
+    def get_shapley_vector(self):
+        if not self.is_superadditive_game():
+            err_msg = "Game is not superadditive"
+            raise ValueError(err_msg)
+
+        if self.shapley_vector:
+            return self.shapley_vector
+
+        n = self.players_count
+        v = self.char_function
+        self.shapley_vector = tuple(
+            1
+            / factorial(n)
+            * sum(
+                factorial(len(s) - 1) * factorial(n - len(s)) * (v(s) - v(tuple(set(s) - {i})))
+                for s in self.coalitions_generator
+                if i in s
+            )
+            for i in self.total_coalition
+        )
+        return self.shapley_vector
+
+    def is_individual_rationalization(self):
+        return isclose(sum(self.shapley_vector), self.char_function(self.total_coalition))
+
+    def is_group_rationalization(self):
+        return all(self.shapley_vector[i - 1] >= self.char_function((i,)) for i in self.total_coalition)
