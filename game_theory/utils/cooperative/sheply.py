@@ -1,3 +1,4 @@
+import logging
 from itertools import combinations
 from math import factorial
 from typing import Generator
@@ -5,6 +6,8 @@ from typing import Generator
 from numpy import isclose
 
 from .types import Coalition, SizeType, ValueType
+
+_logger = logging.getLogger(__name__)
 
 
 class CooperativeGame:
@@ -46,17 +49,24 @@ class CooperativeGame:
             )
         )
 
-    def is_convex(self) -> bool:
+    def is_convex(self) -> tuple[bool, tuple | None]:
         v = self.char_function
-        return all(
-            (
-                v(tuple(first_subset | second_subset)) + v(tuple(first_subset & second_subset))
-                >= v(first_subcoalition) + v(second_subcoalition)
-                for first_subcoalition, second_subcoalition in self.coalitions_pairs_generator
-                if (first_subset := set(first_subcoalition))
-                if (second_subset := set(second_subcoalition))
-            )
-        )
+        for first_subcoalition, second_subcoalition in self.coalitions_pairs_generator:
+            first_subset, second_subset = set(first_subcoalition), set(second_subcoalition)
+            union_coalition = tuple(first_subset | second_subset)
+            intersection_coalition = tuple(first_subset & second_subset)
+            if v(union_coalition) + v(intersection_coalition) < v(first_subcoalition) + v(second_subcoalition):
+                msg = (
+                    f"Игра не является выпуклой, так как, к примеру, "
+                    f"для коалиций S = {first_subset} и Т = {second_subset} имеем\n"
+                    f"v({union_coalition}) + v({intersection_coalition}) < v({first_subset}) + v({second_subset})\n"
+                    f"{v(union_coalition)} + {v(intersection_coalition)} "
+                    f"< {v(first_subcoalition)} + {v(second_subcoalition)}"
+                )
+                _logger.info(msg)
+                return False, (first_subcoalition, second_subcoalition)
+
+        return True, None
 
     def get_shapley_vector(self):
         if not self.is_superadditive_game():
