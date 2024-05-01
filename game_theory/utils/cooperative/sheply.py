@@ -90,8 +90,8 @@ class CooperativeGame:
         )
         return self.shapley_vector
 
-    def is_individual_rationalization(self):
+    def is_group_rationalization(self):
         return isclose(sum(self.shapley_vector), self.char_function(self.total_coalition))
 
-    def is_group_rationalization(self):
+    def is_individual_rationalization(self):
         return all(self.shapley_vector[i - 1] >= self.char_function((i,)) for i in self.total_coalition)
