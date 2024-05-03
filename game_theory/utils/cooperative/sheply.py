@@ -68,7 +68,7 @@ class CooperativeGame:
 
         return True, None
 
-    def get_shapley_vector(self):
+    def get_shapley_vector(self) -> tuple[ValueType, ...]:
         if not self.is_superadditive_game():
             err_msg = "Game is not superadditive"
             raise ValueError(err_msg)
@@ -90,8 +90,8 @@ class CooperativeGame:
         )
         return self.shapley_vector
 
-    def is_group_rationalization(self):
+    def is_group_rationalization(self) -> bool:
         return isclose(sum(self.shapley_vector), self.char_function(self.total_coalition))
 
-    def is_individual_rationalization(self):
+    def is_individual_rationalization(self) -> bool:
         return all(self.shapley_vector[i - 1] >= self.char_function((i,)) for i in self.total_coalition)
